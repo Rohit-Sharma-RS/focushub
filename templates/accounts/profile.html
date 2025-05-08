@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+    <h2>{{ user.username }}'s Profile</h2>
+    <p>Current streak: {{ user.profile.streak }} days</p>
+    <p>Total study time: {{ user.profile.total_study_time }} minutes</p>
+    
+    <h3>Your Recent Activity</h3>
+    <div id="activity-chart" style="width: 100%; height: 300px;">
+        <!-- Chart will be loaded here -->
+    </div>
+    
+    <script>
+        // Simple placeholder for chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('activity-chart');
+            ctx.innerHTML = '<p>Activity chart will be displayed here</p>';
+        });
+    </script>
+{% endblock %}

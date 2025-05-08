@@ -1,0 +1,17 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h1>Welcome to FocusHub</h1>
+    <p>AI-Powered Virtual Study Rooms to boost your productivity</p>
+    
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}!</p>
+        <p>Your current streak: {{ user.profile.streak }} days</p>
+        <p><a href="{% url 'room_list' %}">View Study Rooms</a></p>
+    {% else %}
+        <p>Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'signup' %}">sign up</a> to get started.</p>
+    {% endif %}
+{% endblock %}

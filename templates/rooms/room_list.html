@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Study Rooms{% endblock %}
+
+{% block content %}
+    <h2>Study Rooms</h2>
+    <p><a href="{% url 'create_room' %}">Create New Room</a></p>
+    
+    <h3>Your Rooms</h3>
+    {% if user_rooms %}
+        <ul>
+        {% for room in user_rooms %}
+            <li>
+                <a href="{% url 'room_detail' room.id %}">{{ room.name }}</a>
+                <small>({{ room.category }})</small>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You haven't joined any rooms yet.</p>
+    {% endif %}
+    
+    <h3>All Rooms</h3>
+    {% if rooms %}
+        <ul>
+        {% for room in rooms %}
+            <li>
+                <a href="{% url 'room_detail' room.id %}">{{ room.name }}</a>
+                <small>({{ room.category }} - {{ room.members.count }} members)</small>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No study rooms available.</p>
+    {% endif %}
+{% endblock %}

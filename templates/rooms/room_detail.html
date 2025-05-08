@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .chat-container { 
+        height: 400px; 
+        overflow-y: auto; 
+        border: 1px solid #ddd; 
+        padding: 10px; 
+        margin-bottom: 10px; 
+    }
+    .message { 
+        margin-bottom: 10px; 
+        padding: 5px;
+    }
+    .message-user { 
+        font-weight: bold; 
+    }
+    .motivational { 
+        color: #2c5282; 
+        font-style: italic; 
+        margin: 10px 0; 
+        padding: 5px; 
+        background: #ebf8ff; 
+        border-left: 3px solid #4299e1; 
+    }
+    .timer { 
+        margin: 15px 0; 
+        font-size: 1.2em; 
+    }
+    .leaderboard { 
+        margin-top: 20px; 
+    }
+    .leaderboard-item { 
+        display: flex; 
+        justify-content: space-between;
+        padding: 5px 0;
+    }
+    .recommended { 
+        margin-top: 20px; 
+    }
+    .lo-fi-player {
+        margin: 15px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h2>{{ room.name }}</h2>
+    <p>{{ room.description }}</p>
+    <p>Category: {{ room.category }}</p>
+    <p><a href="{% url 'leave_room' room.id %}">Leave Room</a></p>
+    
+    <div class="timer">
+        <span id="timer-display">00:00:00</span>
+        <button id="start-timer">Start</button>
+        <button id="pause-timer">Pause</button>
+        <button id="reset-timer">Reset</button>
+    </div>
+    
+    <div class="lo-fi-player">
+        <audio controls loop>
+            <source src="https://cdn.freesound.org/previews/531/531547_11404599-lq.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+    
+    <div class="chat-container" id="chat-messages">
+        {% for message in messages %}
+            <div class="message">
+                <span class="message-user">{{ message.user.username }}:</span>
+                <span class="message-content">{{ message.content }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <form id="chat-form">
+        {% csrf_token %}
+        <input type="text" id="chat-message-input" placeholder="Type your message here...">
+        <button type="submit">Send</button>
+    </form>
+    
+    <button id="summarize-button">Summarize Discussion</button>
+    <div id="summary-container" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f5;"></div>
+    
+    <div class="leaderboard">
+        <h3>Top Focused Users</h3>
+        <div>
+            {% for entry in leaderboard %}
+                <div class="leaderboard-item">
+                    <span>{{ entry.user__username }}</span>
+                    <span>{{ entry.total_time }} minutes</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="recommended">
+        <h3>Recommended Rooms</h3>
+        <ul>
+            {% for rec_room in recommended_rooms %}
+                <li><a href="{% url 'room_detail' rec_room.id %}">{{ rec_room.name }}</a> ({{ rec_room.category }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <script>
+        const roomId = '{{ room.id }}';
+        const username = '{{ request.user.username }}';
+        
+        // WebSocket setup
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/rooms/' + roomId + '/'
+        );
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+            const msgUsername = data.username;
+            const motivational = data.motivational_message;
+            
+            // Add message to chat
+            const chatMessages = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.innerHTML = `<span class="message-user">${msgUsername}:</span> <span class="message-content">${message}</span>`;
+            chatMessages.appendChild(messageElement);
+            
+            // Add motivational message if provided
+            if (motivational) {
+                const motivationalElement = document.createElement('div');
+                motivationalElement.className = 'motivational';
+                motivationalElement.textContent = motivational;
+                chatMessages.appendChild(motivationalElement);
+            }
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+        
+        // Send message
+        document.querySelector('#chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const messageInput = document.querySelector('#chat-message-input');
+            const message = messageInput.value;
+            
+            if (message.trim() === '') {
+                return;
+            }
+            
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'username': username
+            }));
+            
+            messageInput.value = '';
+        });
+        
+        // Timer functionality
+        let timerInterval;
+        let seconds = 0;
+        let timerRunning = false;
+        
+        function updateTimerDisplay() {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            document.getElementById('timer-display').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateServerTimer() {
+            // Send current timer to server every minute
+            if (seconds % 60 === 0 && seconds > 0) {
+                const minutes = Math.floor(seconds / 60);
+                
+                fetch('{% url "update_timer" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        'duration': minutes,
+                        'room_id': roomId
+                    })
+                });
+            }
+        }
+        
+        document.getElementById('start-timer').addEventListener('click', function() {
+            if (!timerRunning) {
+                timerRunning = true;
+                timerInterval = setInterval(function() {
+                    seconds++;
+                    updateTimerDisplay();
+                    updateServerTimer();
+                }, 1000);
+            }
+        });
+        
+        document.getElementById('pause-timer').addEventListener('click', function() {
+            if (timerRunning) {
+                timerRunning = false;
+                clearInterval(timerInterval);
+            }
+        });
+        
+        document.getElementById('reset-timer').addEventListener('click', function() {
+            timerRunning = false;
+            clearInterval(timerInterval);
+            seconds = 0;
+            updateTimerDisplay();
+        });
+        
+        // Summarize functionality
+        document.getElementById('summarize-button').addEventListener('click', function() {
+            const summaryContainer = document.getElementById('summary-container');
+            const messageContents = Array.from(document.querySelectorAll('.message-content'))
+                .map(span => span.textContent)
+                .join('. ');
+                
+            // In real app, this would call the AI summarize endpoint
+            // For simplicity, extracting a few sentences
+            const sentences = messageContents.split(/[.!?]+/);
+            const summary = sentences.slice(0, 3).join('. ') + '.';
+            
+            summaryContainer.textContent = summary || "Not enough content to summarize.";
+            summaryContainer.style.display = 'block';
+        });
+    </script>
+{% endblock %}
