@@ -1,22 +1,195 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Profile{% endblock %}
+{% block title %}Profile | {{ user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stats-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .stats-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4b6cb7;
+  }
+  .stats-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+  .chart-container {
+    height: 300px;
+    margin-bottom: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .session-card {
+    background-color: #fff;
+    border-left: 4px solid #4b6cb7;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .room-card {
+    display: flex;
+    justify-content: space-between;
+    background-color: #fff;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-    <h2>{{ user.username }}'s Profile</h2>
-    <p>Current streak: {{ user.profile.streak }} days</p>
-    <p>Total study time: {{ user.profile.total_study_time }} minutes</p>
-    
-    <h3>Your Recent Activity</h3>
-    <div id="activity-chart" style="width: 100%; height: 300px;">
-        <!-- Chart will be loaded here -->
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1>{{ user.username }}'s Dashboard</h1>
+    </div>
+    <div class="col-md-4 text-end">
+      <h4><span class="badge bg-success">🔥 {{ user.profile.streak }} day streak</span></h4>
+    </div>
+  </div>
+
+  <!-- Study Stats Summary -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="stats-card text-center">
+        <div class="stats-value">{{ hours_studied }}</div>
+        <div class="stats-label">Hours</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card text-center">
+        <div class="stats-value">{{ minutes_studied }}</div>
+        <div class="stats-label">Minutes</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card text-center">
+        <div class="stats-value">{{ recent_sessions|length }}</div>
+        <div class="stats-label">Recent Sessions</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stats-card text-center">
+        <div class="stats-value">{{ avg_session_time }}</div>
+        <div class="stats-label">Avg Minutes/Session</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Activity Chart -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="chart-container">
+        <h3>Last 7 Days Activity</h3>
+        <canvas id="dailyActivityChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Stats & Recent Sessions -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="stats-card">
+        <h3>Top Study Rooms</h3>
+        {% if room_stats %}
+          {% for room in room_stats %}
+            <div class="room-card">
+              <div>
+                <h5>{{ room.room__name }}</h5>
+                <small class="text-muted">{{ room.room__category }}</small>
+              </div>
+              <div class="text-end">
+                <div><strong>{{ room.total_time }} minutes</strong></div>
+                <small>{{ room.session_count }} sessions</small>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>You haven't studied in any rooms yet.</p>
+        {% endif %}
+      </div>
     </div>
     
-    <script>
-        // Simple placeholder for chart
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('activity-chart');
-            ctx.innerHTML = '<p>Activity chart will be displayed here</p>';
-        });
-    </script>
+    <div class="col-md-6">
+      <div class="stats-card">
+        <h3>Recent Study Sessions</h3>
+        {% if recent_sessions %}
+          {% for session in recent_sessions %}
+            <div class="session-card">
+              <div class="d-flex justify-content-between">
+                <strong>{{ session.room.name }}</strong>
+                <span>{{ session.duration }} minutes</span>
+              </div>
+              <div class="small text-muted">
+                {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>You don't have any recent study sessions.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Daily activity chart
+    const dailyActivityChart = document.getElementById('dailyActivityChart');
+    
+    const dailyData = [
+      {% for day in daily_stats %}
+        {{ day.minutes }},
+      {% endfor %}
+    ];
+    
+    const dailyLabels = [
+      {% for day in daily_stats %}
+        '{{ day.day }}',
+      {% endfor %}
+    ];
+    
+    new Chart(dailyActivityChart, {
+      type: 'bar',
+      data: {
+        labels: dailyLabels,
+        datasets: [{
+          label: 'Study Minutes',
+          data: dailyData,
+          backgroundColor: '#4b6cb7',
+          borderColor: '#4b6cb7',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Minutes'
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}

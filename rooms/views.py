@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.db.models import Sum
 from .models import Room, Message, StudySession
 from ai.sentiment import analyze_sentiment
+from ai.groq_integration import summarize_chat, answer_question
 import json
 
 @login_required
@@ -45,9 +46,9 @@ def room_detail(request, room_id):
     
     # Get leaderboard data
     leaderboard = StudySession.objects.filter(room=room) \
-                    .values('user__username') \
-                    .annotate(total_time=Sum('duration')) \
-                    .order_by('-total_time')[:5]
+                .values('user__username') \
+                .annotate(total_time=Sum('duration')) \
+                .order_by('-total_time')[:5]
     
     # Get recommended rooms
     recommended_rooms = get_recommended_rooms(room)
@@ -108,6 +109,50 @@ def update_timer(request):
         return JsonResponse({'status': 'success'})
     
     return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def summarize_room(request, room_id):
+    """Generate a summary of recent room messages using Groq API"""
+    if request.method == 'GET':
+        room = get_object_or_404(Room, id=room_id)
+        messages = room.messages.order_by('-timestamp')[:50]  # Last 50 messages
+        
+        # If no messages, return error
+        if not messages:
+            return JsonResponse({'summary': 'No messages to summarize'})
+        
+        # Format messages for summarization
+        message_texts = [f"{msg.user.username}: {msg.content}" for msg in messages]
+        message_texts.reverse()  # Put in chronological order
+        
+        # Get summary from Groq API
+        summary = summarize_chat(message_texts)
+        
+        # Store summary in session for later use when asking questions
+        request.session[f'room_{room_id}_summary'] = summary
+        
+        return JsonResponse({'summary': summary})
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+@login_required
+def ask_about_summary(request, room_id):
+    """Answer questions about a room summary using Groq API"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        question = data.get('question')
+        
+        # Retrieve stored summary
+        summary = request.session.get(f'room_{room_id}_summary')
+        if not summary:
+            return JsonResponse({'error': 'No summary available. Please generate a summary first.'}, status=400)
+        
+        # Get answer from Groq API
+        answer = answer_question(summary, question)
+        
+        return JsonResponse({'answer': answer})
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def get_recommended_rooms(current_room):
     """Simple room recommendation system based on category and common members"""

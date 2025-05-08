@@ -54,15 +54,28 @@
     <p><a href="{% url 'leave_room' room.id %}">Leave Room</a></p>
     
     <div class="timer">
-        <span id="timer-display">00:00:00</span>
-        <button id="start-timer">Start</button>
-        <button id="pause-timer">Pause</button>
-        <button id="reset-timer">Reset</button>
+        <span id="timer-display">25:00</span>
+        <div class="pomodoro-controls">
+            <button id="start-timer">Start</button>
+            <button id="pause-timer">Pause</button>
+            <button id="reset-timer">Reset</button>
+            <select id="pomodoro-mode">
+                <option value="pomodoro">Focus (25 min)</option>
+                <option value="short-break">Short Break (5 min)</option>
+                <option value="long-break">Long Break (15 min)</option>
+            </select>
+            <span id="pomodoro-status">Ready to focus</span>
+            <span id="pomodoro-count">Pomodoros: 0</span>
+        </div>
     </div>
     
     <div class="lo-fi-player">
-        <audio controls loop>
+        <audio id="background-music" controls loop>
             <source src="https://cdn.freesound.org/previews/531/531547_11404599-lq.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        <audio id="timer-complete-sound">
+            <source src="https://cdn.freesound.org/previews/536/536096_11836187-lq.mp3" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
     </div>
@@ -82,8 +95,18 @@
         <button type="submit">Send</button>
     </form>
     
-    <button id="summarize-button">Summarize Discussion</button>
-    <div id="summary-container" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f5;"></div>
+    <div class="summary-section">
+        <button id="summarize-button">Summarize Discussion</button>
+        <div id="summary-container" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f5;">
+            <div id="summary-content"></div>
+            <div id="summary-qa" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px; display: none;">
+                <h4>Ask about this summary</h4>
+                <input type="text" id="summary-question" placeholder="Ask a question about this discussion...">
+                <button id="ask-question-btn">Ask</button>
+                <div id="answer-container" style="margin-top: 10px; padding: 10px; background: #e9f5ff;"></div>
+            </div>
+        </div>
+    </div>
     
     <div class="leaderboard">
         <h3>Top Focused Users</h3>
@@ -91,7 +114,7 @@
             {% for entry in leaderboard %}
                 <div class="leaderboard-item">
                     <span>{{ entry.user__username }}</span>
-                    <span>{{ entry.total_time }} minutes</span>
+                    <span>{{ entry.total_time|floatformat:1 }} hours</span>
                 </div>
             {% endfor %}
         </div>
@@ -162,25 +185,30 @@
             messageInput.value = '';
         });
         
-        // Timer functionality
         let timerInterval;
-        let seconds = 0;
+        let secondsRemaining = 25 * 60;
         let timerRunning = false;
+        let pomodoroCount = 0;
+        let totalFocusSeconds = 0;
+        const pomodoroSettings = {
+            'pomodoro': 25 * 60,
+            'short-break': 5 * 60,
+            'long-break': 15 * 60
+        };
+        let currentMode = 'pomodoro';
         
         function updateTimerDisplay() {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            
-            document.getElementById('timer-display').textContent = 
+            const hours = Math.floor(secondsRemaining / 3600);
+            const minutes = Math.floor((secondsRemaining % 3600) / 60);
+            const secs = secondsRemaining % 60;
+        
+            document.getElementById('timer-display').textContent =
                 `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
         
         function updateServerTimer() {
-            // Send current timer to server every minute
-            if (seconds % 60 === 0 && seconds > 0) {
-                const minutes = Math.floor(seconds / 60);
-                
+            if (currentMode === 'pomodoro' && totalFocusSeconds > 0 && totalFocusSeconds % 300 === 0) {
+                const focusHours = totalFocusSeconds / 3600;
                 fetch('{% url "update_timer" %}', {
                     method: 'POST',
                     headers: {
@@ -188,52 +216,182 @@
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     },
                     body: JSON.stringify({
-                        'duration': minutes,
+                        'duration': focusHours.toFixed(2),
                         'room_id': roomId
                     })
                 });
             }
         }
         
-        document.getElementById('start-timer').addEventListener('click', function() {
+        function switchMode(mode) {
+            currentMode = mode;
+            secondsRemaining = pomodoroSettings[mode];
+            document.getElementById('pomodoro-mode').value = mode;
+        
+            const statusElement = document.getElementById('pomodoro-status');
+            statusElement.textContent =
+                mode === 'pomodoro' ? 'Focus time!' :
+                mode === 'short-break' ? 'Take a short break' : 'Take a long break';
+        
+            updateTimerDisplay();
+        }
+        
+        function timerComplete() {
+            document.getElementById('timer-complete-sound').play();
+        
+            if (Notification.permission === 'granted') {
+                new Notification('Timer Complete', {
+                    body: currentMode === 'pomodoro' ? 'Time for a break!' : 'Back to focus time!',
+                    icon: '/static/favicon.ico'
+                });
+            }
+        
+            if (currentMode === 'pomodoro') {
+                pomodoroCount++;
+                document.getElementById('pomodoro-count').textContent = `Pomodoros: ${pomodoroCount}`;
+                switchMode(pomodoroCount % 4 === 0 ? 'long-break' : 'short-break');
+            } else {
+                switchMode('pomodoro');
+            }
+        
+            timerRunning = false;
+            clearInterval(timerInterval);
+        }
+        
+        document.getElementById('start-timer').addEventListener('click', function () {
             if (!timerRunning) {
+                if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                    Notification.requestPermission();
+                }
+        
                 timerRunning = true;
-                timerInterval = setInterval(function() {
-                    seconds++;
-                    updateTimerDisplay();
-                    updateServerTimer();
+                this.textContent = 'Running...';
+                document.getElementById('pause-timer').disabled = false;
+        
+                timerInterval = setInterval(function () {
+                    if (secondsRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        timerComplete();
+                    } else {
+                        secondsRemaining--;
+                        if (currentMode === 'pomodoro') {
+                            totalFocusSeconds++;
+                        }
+                        updateTimerDisplay();
+                        updateServerTimer();
+                    }
                 }, 1000);
             }
         });
         
-        document.getElementById('pause-timer').addEventListener('click', function() {
+        document.getElementById('pause-timer').addEventListener('click', function () {
             if (timerRunning) {
                 timerRunning = false;
                 clearInterval(timerInterval);
+                document.getElementById('start-timer').textContent = 'Resume';
+                this.disabled = true;
+        
+                if (currentMode === 'pomodoro') {
+                    const focusHours = totalFocusSeconds / 3600;
+                    fetch('{% url "update_timer" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        },
+                        body: JSON.stringify({
+                            'duration': focusHours.toFixed(2),
+                            'room_id': roomId
+                        })
+                    });
+                }
             }
         });
         
-        document.getElementById('reset-timer').addEventListener('click', function() {
+        document.getElementById('reset-timer').addEventListener('click', function () {
             timerRunning = false;
             clearInterval(timerInterval);
-            seconds = 0;
-            updateTimerDisplay();
+            totalFocusSeconds = 0;
+            document.getElementById('start-timer').textContent = 'Start';
+            document.getElementById('pause-timer').disabled = false;
+            switchMode(currentMode);
         });
         
-        // Summarize functionality
+        document.getElementById('pomodoro-mode').addEventListener('change', function () {
+            const mode = this.value;
+            timerRunning = false;
+            clearInterval(timerInterval);
+            totalFocusSeconds = 0;
+            switchMode(mode);
+        });
+        
+        
+        // Summarize functionality using Groq API
         document.getElementById('summarize-button').addEventListener('click', function() {
             const summaryContainer = document.getElementById('summary-container');
-            const messageContents = Array.from(document.querySelectorAll('.message-content'))
-                .map(span => span.textContent)
-                .join('. ');
-                
-            // In real app, this would call the AI summarize endpoint
-            // For simplicity, extracting a few sentences
-            const sentences = messageContents.split(/[.!?]+/);
-            const summary = sentences.slice(0, 3).join('. ') + '.';
+            const summaryContent = document.getElementById('summary-content');
+            const summaryQA = document.getElementById('summary-qa');
             
-            summaryContainer.textContent = summary || "Not enough content to summarize.";
+            // Show loading state
+            summaryContent.innerHTML = '<p>Generating summary with Groq AI...</p>';
             summaryContainer.style.display = 'block';
+            
+            // Call our API endpoint that uses Groq
+            fetch(`/rooms/${roomId}/summarize/`)
+                .then(response => response.json())
+                .then(data => {
+                    summaryContent.innerHTML = `<p>${data.summary}</p>`;
+                    summaryQA.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching summary:', error);
+                    summaryContent.innerHTML = '<p>Error generating summary. Please try again.</p>';
+                });
+        });
+        
+        // Question answering functionality
+        document.getElementById('ask-question-btn').addEventListener('click', function() {
+            const question = document.getElementById('summary-question').value;
+            const answerContainer = document.getElementById('answer-container');
+            
+            if (!question.trim()) {
+                return;
+            }
+            
+            // Show loading state
+            answerContainer.innerHTML = '<p>Thinking about your question...</p>';
+            
+            // Call our API endpoint for Q&A
+            fetch(`/rooms/${roomId}/ask/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ question: question })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        answerContainer.innerHTML = `<p class="error">${data.error}</p>`;
+                    } else {
+                        answerContainer.innerHTML = `<p><strong>Q: ${question}</strong></p><p>${data.answer}</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error asking question:', error);
+                    answerContainer.innerHTML = '<p>Error processing your question. Please try again.</p>';
+                });
+            
+            // Clear question input
+            document.getElementById('summary-question').value = '';
+        });
+        
+        // Allow pressing Enter to submit question
+        document.getElementById('summary-question').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('ask-question-btn').click();
+            }
         });
     </script>
 {% endblock %}
