@@ -3,155 +3,241 @@
 
 {% block title %}Profile | {{ user.username }}{% endblock %}
 
-{% block extra_css %}
-<style>
-  .stats-card {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  .stats-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #4b6cb7;
-  }
-  .stats-label {
-    font-size: 0.9rem;
-    color: #6c757d;
-  }
-  .chart-container {
-    height: 300px;
-    margin-bottom: 2rem;
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
-  .session-card {
-    background-color: #fff;
-    border-left: 4px solid #4b6cb7;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  .room-card {
-    display: flex;
-    justify-content: space-between;
-    background-color: #fff;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-</style>
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h1>{{ user.username }}'s Dashboard</h1>
-    </div>
-    <div class="col-md-4 text-end">
-      <h4><span class="badge bg-success">🔥 {{ user.profile.streak }} day streak</span></h4>
-    </div>
-  </div>
-
-  <!-- Study Stats Summary -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="stats-card text-center">
-        <div class="stats-value">{{ hours_studied }}</div>
-        <div class="stats-label">Hours</div>
+<div class="container mx-auto py-6">
+  <!-- Profile Header Section -->
+  <div class="mb-8 bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden transition-all">
+    <div class="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-600">
+      <!-- Decorative Elements -->
+      <div class="absolute inset-0 opacity-20">
+        <div class="absolute top-0 left-0 w-20 h-20 bg-white rounded-full -ml-10 -mt-10"></div>
+        <div class="absolute top-10 right-10 w-16 h-16 bg-white rounded-full"></div>
+        <div class="absolute bottom-0 right-20 w-24 h-24 bg-white rounded-full mb-[-3rem]"></div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="stats-card text-center">
-        <div class="stats-value">{{ minutes_studied }}</div>
-        <div class="stats-label">Minutes</div>
+    
+    <div class="relative px-6 pt-8 pb-6 flex flex-col md:flex-row md:items-end">
+      <!-- Profile Image -->
+      <div class="absolute top-0 transform -translate-y-1/2">
+        <div class="h-24 w-24 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg border-4 border-white dark:border-slate-800">
+          {{ user.username|first|upper }}
+        </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stats-card text-center">
-        <div class="stats-value">{{ recent_sessions|length }}</div>
-        <div class="stats-label">Recent Sessions</div>
+      
+      <!-- Profile Info -->
+      <div class="mt-12 md:mt-0 md:ml-28">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ user.username }}</h1>
+        <p class="text-gray-600 dark:text-gray-400">Member since {{ user.date_joined|date:"F j, Y" }}</p>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stats-card text-center">
-        <div class="stats-value">{{ avg_session_time }}</div>
-        <div class="stats-label">Avg Minutes/Session</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Daily Activity Chart -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="chart-container">
-        <h3>Last 7 Days Activity</h3>
-        <canvas id="dailyActivityChart"></canvas>
+      
+      <!-- Streak Badge -->
+      <div class="mt-4 md:mt-0 md:ml-auto">
+        <div class="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-medium animate__animated animate__pulse animate__infinite animate__slow">
+          <i class="fas fa-fire mr-2"></i>
+          <span class="text-lg font-bold">{{ user.profile.streak }} day streak</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Room Stats & Recent Sessions -->
-  <div class="row">
-    <div class="col-md-6">
-      <div class="stats-card">
-        <h3>Top Study Rooms</h3>
+  <!-- Dashboard Content -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column - Study Stats -->
+    <div class="lg:col-span-1">
+      <!-- Summary Stats Cards -->
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ hours_studied }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Hours</div>
+          </div>
+        </div>
+        
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ minutes_studied }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutes</div>
+          </div>
+        </div>
+        
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ recent_sessions|length }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Sessions</div>
+          </div>
+        </div>
+        
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ avg_session_time }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avg Min/Session</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Study Consistency Calendar -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md mb-6">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Study Consistency</h3>
+        <div id="studyCalendar" class="w-full"></div>
+      </div>
+      
+      <!-- Top Study Rooms -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Top Study Rooms</h3>
+          <a href="{% url 'room_list' %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium">
+            View All <i class="fas fa-chevron-right ml-1"></i>
+          </a>
+        </div>
+        
         {% if room_stats %}
           {% for room in room_stats %}
-            <div class="room-card">
-              <div>
-                <h5>{{ room.room__name }}</h5>
-                <small class="text-muted">{{ room.room__category }}</small>
+            <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mb-3 transition-all hover:shadow-md">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h5 class="font-medium text-gray-800 dark:text-gray-200">{{ room.room__name }}</h5>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300 mt-1">
+                    {{ room.room__category }}
+                  </span>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-indigo-600 dark:text-indigo-400">{{ room.total_time }} min</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ room.session_count }} sessions</div>
+                </div>
               </div>
-              <div class="text-end">
-                <div><strong>{{ room.total_time }} minutes</strong></div>
-                <small>{{ room.session_count }} sessions</small>
+              
+              <!-- Progress bar -->
+              <div class="mt-3">
+                <div class="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
+                  <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full" style="width: {{ room.percentage }}%"></div>
+                </div>
               </div>
             </div>
           {% endfor %}
         {% else %}
-          <p>You haven't studied in any rooms yet.</p>
+          <div class="text-center py-8">
+            <div class="text-gray-400 dark:text-gray-500 mb-3">
+              <i class="fas fa-book-reader text-3xl"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">You haven't studied in any rooms yet.</p>
+            <a href="{% url 'room_list' %}" class="mt-3 inline-block px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-md text-sm font-medium transition-colors">
+              Find a Room
+            </a>
+          </div>
         {% endif %}
       </div>
     </div>
     
-    <div class="col-md-6">
-      <div class="stats-card">
-        <h3>Recent Study Sessions</h3>
+    <!-- Right Column - Charts -->
+    <div class="lg:col-span-2">
+      <!-- Daily Activity Chart -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md mb-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Weekly Study Progress</h3>
+          <div class="flex space-x-2">
+            <button id="viewByHours" class="px-3 py-1 rounded-md bg-indigo-600 text-white text-sm font-medium">Hours</button>
+            <button id="viewBySessions" class="px-3 py-1 rounded-md bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium">Sessions</button>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="dailyActivityChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Focus Distribution Chart -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md mb-6">
+        <h3 class="text-lg font-semibold mb-6 text-gray-800 dark:text-gray-200">Focus Distribution by Category</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="h-64">
+            <canvas id="categoryChart"></canvas>
+          </div>
+          <div class="h-64">
+            <canvas id="timeOfDayChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Study Sessions -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Recent Study Sessions</h3>
+          <button id="toggleSessions" class="text-indigo-600 dark:text-indigo-400 text-sm font-medium">
+            Show All <i class="fas fa-chevron-down ml-1"></i>
+          </button>
+        </div>
+        
         {% if recent_sessions %}
-          {% for session in recent_sessions %}
-            <div class="session-card">
-              <div class="d-flex justify-content-between">
-                <strong>{{ session.room.name }}</strong>
-                <span>{{ session.duration }} minutes</span>
+          <div id="sessionList" class="max-h-96 overflow-y-auto pr-2">
+            {% for session in recent_sessions %}
+              <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mb-3 border-l-4 border-indigo-500 transition-all hover:shadow-md">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h5 class="font-medium text-gray-800 dark:text-gray-200">{{ session.room.name }}</h5>
+                    <div class="flex items-center mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <i class="far fa-calendar-alt mr-1"></i>
+                      <span>{{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-bold text-indigo-600 dark:text-indigo-400">{{ session.duration }} min</div>
+                    {% if session.productivity_rating %}
+                      <div class="flex items-center justify-end mt-1">
+                        {% for i in "12345" %}
+                          <i class="fas fa-star text-xs {% if forloop.counter <= session.productivity_rating %}text-amber-400{% else %}text-gray-300 dark:text-gray-600{% endif %}"></i>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                {% if session.notes %}
+                  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ session.notes }}</p>
+                  </div>
+                {% endif %}
               </div>
-              <div class="small text-muted">
-                {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
-              </div>
-            </div>
-          {% endfor %}
+            {% endfor %}
+          </div>
         {% else %}
-          <p>You don't have any recent study sessions.</p>
+          <div class="text-center py-8">
+            <div class="text-gray-400 dark:text-gray-500 mb-3">
+              <i class="fas fa-history text-3xl"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">You don't have any recent study sessions.</p>
+            <a href="{% url 'room_list' %}" class="mt-3 inline-block px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-md text-sm font-medium transition-colors">
+              Start Studying
+            </a>
+          </div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Daily activity chart
-    const dailyActivityChart = document.getElementById('dailyActivityChart');
+    // Theme-aware colors
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const textColor = isDarkMode ? 'rgba(229, 231, 235, 0.8)' : 'rgba(55, 65, 81, 0.8)';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     
+    // Chart.js global defaults
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+    
+    // Set up daily activity chart
+    const dailyActivity = document.getElementById('dailyActivityChart');
     const dailyData = [
       {% for day in daily_stats %}
         {{ day.minutes }},
@@ -164,32 +250,493 @@
       {% endfor %}
     ];
     
-    new Chart(dailyActivityChart, {
+    const sessionCounts = [5, 3, 0, 4, 2, 6, 4]; // Sample data, replace with actual session counts
+    
+    const dailyChart = new Chart(dailyActivity, {
       type: 'bar',
       data: {
         labels: dailyLabels,
         datasets: [{
           label: 'Study Minutes',
           data: dailyData,
-          backgroundColor: '#4b6cb7',
-          borderColor: '#4b6cb7',
-          borderWidth: 1
+          backgroundColor: 'rgba(79, 70, 229, 0.7)',
+          borderColor: 'rgba(79, 70, 229, 1)',
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 20,
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+            titleColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+            bodyColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 4,
+            usePointStyle: true,
+            callbacks: {
+              title: function(context) {
+                return moment(context[0].label).format('dddd, MMM D');
+              }
+            }
+          }
+        },
         scales: {
           y: {
             beginAtZero: true,
+            grid: {
+              display: true,
+              color: gridColor
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 11
+              }
+            },
             title: {
               display: true,
-              text: 'Minutes'
+              text: 'Minutes',
+              color: textColor,
+              font: {
+                size: 12,
+                weight: 'normal'
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 11
+              },
+              maxRotation: 0
+            }
+          }
+        },
+        animation: {
+          duration: 1500,
+          easing: 'easeOutQuart'
+        },
+        hover: {
+          animationDuration: 200
+        }
+      }
+    });
+    
+    // Toggle between hours and sessions view
+    document.getElementById('viewByHours').addEventListener('click', function() {
+      this.classList.remove('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
+      this.classList.add('bg-indigo-600', 'text-white');
+      
+      document.getElementById('viewBySessions').classList.remove('bg-indigo-600', 'text-white');
+      document.getElementById('viewBySessions').classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
+      
+      dailyChart.data.datasets[0].label = 'Study Minutes';
+      dailyChart.data.datasets[0].data = dailyData;
+      dailyChart.options.scales.y.title.text = 'Minutes';
+      dailyChart.update();
+    });
+    
+    document.getElementById('viewBySessions').addEventListener('click', function() {
+      this.classList.remove('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
+      this.classList.add('bg-indigo-600', 'text-white');
+      
+      document.getElementById('viewByHours').classList.remove('bg-indigo-600', 'text-white');
+      document.getElementById('viewByHours').classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
+      
+      dailyChart.data.datasets[0].label = 'Study Sessions';
+      dailyChart.data.datasets[0].data = sessionCounts;
+      dailyChart.options.scales.y.title.text = 'Sessions';
+      dailyChart.update();
+    });
+    
+    // Category distribution chart
+    const categoryChart = new Chart(
+      document.getElementById('categoryChart'),
+      {
+        type: 'doughnut',
+        data: {
+          labels: ['Mathematics', 'Computer Science', 'Literature', 'Science', 'Languages'],
+          datasets: [{
+            data: [35, 25, 15, 15, 10],
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.8)',  // Indigo
+              'rgba(139, 92, 246, 0.8)',  // Purple
+              'rgba(59, 130, 246, 0.8)',  // Blue
+              'rgba(16, 185, 129, 0.8)',  // Green
+              'rgba(236, 72, 153, 0.8)'   // Pink
+            ],
+            borderColor: isDarkMode ? 'rgba(30, 41, 59, 1)' : 'white',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 12,
+                padding: 15,
+                font: {
+                  size: 11
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Study Categories',
+              font: {
+                size: 14
+              }
+            },
+            tooltip: {
+              backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              titleColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              bodyColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              borderWidth: 1,
+              padding: 12
+            }
+          },
+          cutout: '65%',
+          animation: {
+            animateRotate: true,
+            animateScale: true
+          }
+        }
+      }
+    );
+    
+    // Time of day distribution chart
+    const timeOfDayChart = new Chart(
+      document.getElementById('timeOfDayChart'),
+      {
+        type: 'radar',
+        data: {
+          labels: ['Morning', 'Afternoon', 'Evening', 'Night', 'Late Night', 'Early Morning'],
+          datasets: [{
+            label: 'Study Time Distribution',
+            data: [65, 85, 95, 60, 25, 30],
+            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+            borderColor: 'rgba(139, 92, 246, 1)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(139, 92, 246, 1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: {
+                color: gridColor
+              },
+              grid: {
+                color: gridColor
+              },
+              pointLabels: {
+                font: {
+                  size: 11
+                }
+              },
+              ticks: {
+                display: false,
+                backdropColor: 'transparent'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: 'Time of Day',
+              font: {
+                size: 14
+              }
+            },
+            tooltip: {
+              backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              titleColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              bodyColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+              borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              borderWidth: 1,
+              padding: 12
             }
           }
         }
       }
+    );
+    
+    // Study calendar heatmap
+    const generateCalendarData = () => {
+      const now = new Date();
+      const data = [];
+      
+      // Generate some sample data for the past 90 days
+      for (let i = 0; i < 90; i++) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        
+        // Random value between 0 and 4, with higher probability for recent dates
+        const recency = Math.exp(-i / 30); // Exponential decay
+        const randomValue = Math.random();
+        let value = 0;
+        
+        if (randomValue < 0.3 * recency) value = 4;
+        else if (randomValue < 0.5 * recency) value = 3;
+        else if (randomValue < 0.7 * recency) value = 2;
+        else if (randomValue < 0.85 * recency) value = 1;
+        
+        data.push({
+          date: date.toISOString().split('T')[0],
+          value: value
+        });
+      }
+      
+      return data;
+    };
+    
+    const calendarData = generateCalendarData();
+    
+    // Create the calendar heatmap
+    const createCalendar = () => {
+      const calendarElement = document.getElementById('studyCalendar');
+      calendarElement.innerHTML = '';
+      
+      const width = calendarElement.clientWidth;
+      const cellSize = width > 400 ? 12 : 10;
+      const cellMargin = 2;
+      
+      const svg = d3.select('#studyCalendar')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', 120);
+      
+      const colorScale = d3.scaleLinear()
+        .domain([0, 1, 2, 3, 4])
+        .range([
+          isDarkMode ? '#1e293b' : '#f3f4f6',
+          '#c7d2fe',
+          '#a5b4fc',
+          '#818cf8',
+          '#6366f1'
+        ]);
+      
+      // Group data by week
+      const weeks = d3.groups(calendarData, d => {
+        const date = new Date(d.date);
+        return d3.timeWeek.floor(date);
+      });
+      
+      // Create the calendar grid
+      const g = svg.append('g')
+        .attr('transform', `translate(30, 20)`);
+      
+      const weekGroups = g.selectAll('g')
+        .data(weeks)
+        .enter()
+        .append('g')
+        .attr('transform', (d, i) => `translate(${i * (cellSize + cellMargin)}, 0)`);
+      
+      weekGroups.selectAll('rect')
+        .data(d => d[1])
+        .enter()
+        .append('rect')
+        .attr('width', cellSize)
+        .attr('height', cellSize)
+        .attr('y', d => {
+          const date = new Date(d.date);
+          return date.getDay() * (cellSize + cellMargin);
+        })
+        .attr('rx', 2)
+        .attr('fill', d => colorScale(d.value))
+        .attr('stroke', isDarkMode ? '#0f172a' : '#ffffff')
+        .attr('stroke-width', 1)
+        .attr('data-date', d => d.date)
+        .attr('data-value', d => d.value)
+        .on('mouseover', function(event, d) {
+          // Enhancement: Add tooltip
+          d3.select(this)
+            .transition()
+            .duration(100)
+            .attr('stroke', '#6366f1')
+            .attr('stroke-width', 2);
+        })
+        .on('mouseout', function(event, d) {
+          d3.select(this)
+            .transition()
+            .duration(100)
+            .attr('stroke', isDarkMode ? '#0f172a' : '#ffffff')
+            .attr('stroke-width', 1);
+        });
+      
+      // Add day labels (Mon, Tue, etc.)
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      svg.append('g')
+        .attr('transform', 'translate(10, 20)')
+        .selectAll('text')
+        .data(days)
+        .enter()
+        .append('text')
+        .attr('y', (d, i) => i * (cellSize + cellMargin) + cellSize / 2 + 4)
+        .style('text-anchor', 'end')
+        .style('font-size', '9px')
+        .style('fill', textColor)
+        .text(d => d);
+      
+      // Add month labels
+      const months = d3.groups(calendarData, d => {
+        const date = new Date(d.date);
+        return date.getMonth();
+      });
+      
+      const monthLabels = [];
+      months.forEach(month => {
+        // Find the first date in this month
+        const firstDate = month[1][0].date;
+        const date = new Date(firstDate);
+        const monthName = date.toLocaleString('default', { month: 'short' });
+        
+        // Calculate position
+        const weeksSinceStart = d3.timeWeek.count(
+          d3.timeWeek.floor(new Date(calendarData[calendarData.length - 1].date)),
+          d3.timeWeek.floor(date)
+        );
+        
+        monthLabels.push({
+          name: monthName,
+          position: weeksSinceStart
+        });
+      });
+      
+      svg.append('g')
+        .attr('transform', 'translate(30, 10)')
+        .selectAll('text')
+        .data(monthLabels)
+        .enter()
+        .append('text')
+        .attr('x', d => d.position * (cellSize + cellMargin))
+        .style('text-anchor', 'start')
+        .style('font-size', '10px')
+        .style('fill', textColor)
+        .text(d => d.name);
+      
+      // Add legend
+      const legend = svg.append('g')
+        .attr('transform', `translate(${width - 180}, 100)`);
+      
+      legend.append('text')
+        .attr('x', 0)
+        .attr('y', 9)
+        .style('font-size', '10px')
+        .style('fill', textColor)
+        .text('Less');
+      
+      const legendColors = [0, 1, 2, 3, 4];
+      
+      legend.selectAll('rect')
+        .data(legendColors)
+        .enter()
+        .append('rect')
+        .attr('x', (d, i) => 30 + i * (cellSize + 4))
+        .attr('y', 0)
+        .attr('width', cellSize)
+        .attr('height', cellSize)
+        .attr('rx', 2)
+        .attr('fill', d => colorScale(d))
+        .attr('stroke', isDarkMode ? '#0f172a' : '#ffffff')
+        .attr('stroke-width', 1);
+      
+      legend.append('text')
+        .attr('x', 30 + legendColors.length * (cellSize + 4) + 10)
+        .attr('y', 9)
+        .style('font-size', '10px')
+        .style('fill', textColor)
+        .text('More');
+    };
+    
+    // Create calendar when DOM is loaded
+    createCalendar();
+    
+    // Recreate calendar when window is resized
+    window.addEventListener('resize', debounce(createCalendar, 250));
+    
+    // Toggle sessions view
+    const toggleSessions = document.getElementById('toggleSessions');
+    const sessionList = document.getElementById('sessionList');
+    
+    toggleSessions.addEventListener('click', function() {
+      if (sessionList.classList.contains('max-h-96')) {
+        sessionList.classList.remove('max-h-96');
+        this.innerHTML = 'Show Less <i class="fas fa-chevron-up ml-1"></i>';
+      } else {
+        sessionList.classList.add('max-h-96');
+        this.innerHTML = 'Show All <i class="fas fa-chevron-down ml-1"></i>';
+      }
     });
+    
+    // Simple debounce function for resize events
+    function debounce(func, wait) {
+      let timeout;
+      return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          func.apply(context, args);
+        }, wait);
+      };
+    }
+    
+    // Theme change listener to update charts when theme changes
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    themeToggleBtn.addEventListener('click', debounce(() => {
+      // Update charts with new theme colors
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      const textColor = isDarkMode ? 'rgba(229, 231, 235, 0.8)' : 'rgba(55, 65, 81, 0.8)';
+      const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+      
+      // Update global chart defaults
+      Chart.defaults.color = textColor;
+      Chart.defaults.borderColor = gridColor;
+      
+      // Update charts
+      dailyChart.options.scales.y.grid.color = gridColor;
+      dailyChart.options.scales.y.ticks.color = textColor;
+      dailyChart.options.scales.y.title.color = textColor;
+      dailyChart.options.scales.x.ticks.color = textColor;
+      dailyChart.update();
+      
+      categoryChart.data.datasets[0].borderColor = isDarkMode ? 'rgba(30, 41, 59, 1)' : 'white';
+      categoryChart.update();
+      
+      timeOfDayChart.options.scales.r.angleLines.color = gridColor;
+      timeOfDayChart.options.scales.r.grid.color = gridColor;
+      timeOfDayChart.update();
+      
+      // Recreate calendar with new theme colors
+      createCalendar();
+    }, 250));
   });
 </script>
 {% endblock %}

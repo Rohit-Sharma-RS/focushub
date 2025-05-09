@@ -1,41 +1,233 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="h-full">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FocusHub - {% block title %}{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Theme toggle functionality
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        nav { padding: 10px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
-        nav a { margin-right: 15px; text-decoration: none; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
-        .alert { padding: 10px; margin-bottom: 15px; border: 1px solid transparent; }
-        .alert-success { background-color: #d4edda; color: #155724; }
-        .alert-error { background-color: #f8d7da; color: #721c24; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
-    <nav>
-        <a href="{% url 'home' %}">Home</a>
-        {% if user.is_authenticated %}
-            <a href="{% url 'room_list' %}">Study Rooms</a>
-            <a href="{% url 'profile' %}">Profile (Streak: {{ user.profile.streak }})</a>
-            <a href="{% url 'logout' %}">Logout</a>
-        {% else %}
-            <a href="{% url 'login' %}">Login</a>
-            <a href="{% url 'signup' %}">Sign Up</a>
-        {% endif %}
+<body class="h-full bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 transition-all">
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 bg-white dark:bg-slate-800 shadow-md transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo and main navigation -->
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="{% url 'home' %}" class="flex items-center">
+                            <i class="fa-solid fa-brain text-indigo-600 dark:text-indigo-400 text-2xl mr-2"></i>
+                            <span class="font-bold text-xl text-indigo-600 dark:text-indigo-400">FocusHub</span>
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-6 items-center">
+                        <a href="{% url 'home' %}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Home</a>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'room_list' %}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Study Rooms</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right-side navigation items -->
+                <div class="flex items-center space-x-4">
+                    <!-- Theme toggle button -->
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none">
+                        <i id="theme-toggle-dark-icon" class="fa-solid fa-moon hidden text-gray-600 dark:text-gray-300"></i>
+                        <i id="theme-toggle-light-icon" class="fa-solid fa-sun hidden text-gray-600 dark:text-gray-300"></i>
+                    </button>
+
+                    {% if user.is_authenticated %}
+                        <!-- User profile dropdown -->
+                        <div x-data="{ open: false }" class="relative">
+                            <!-- Toggle button -->
+                            <button
+                              @click="open = !open"
+                              class="flex items-center space-x-2 focus:outline-none"
+                            >
+                              <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                                {{ user.username|first|upper }}
+                              </div>
+                              <i class="fa-solid fa-chevron-down text-gray-300"></i>
+                            </button>
+                          
+                            <!-- Dropdown -->
+                            <div
+                              x-show="open"
+                              @click.away="open = false"
+                              x-transition
+                              class="origin-top-right absolute right-0 mt-2 w-48 rounded-lg bg-white dark:bg-slate-800 shadow-lg ring-1 ring-black/5"
+                              style="display: none;"
+                            >
+                              <a href="{% url 'profile' %}"
+                                 class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-slate-700">
+                                My Profile
+                              </a>
+                              <form method="POST" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button
+                                  type="submit"
+                                  class="w-full text-left block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-slate-700"
+                                >
+                                  Logout
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                    {% else %}
+                        <!-- Login/Signup links -->
+                        <div class="flex space-x-2">
+                            <a href="{% url 'login' %}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Login</a>
+                            <a href="{% url 'signup' %}" class="px-3 py-2 text-sm font-medium rounded-md bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600">Sign Up</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="flex items-center sm:hidden">
+                    <button type="button" id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:focus:ring-indigo-400" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu, show/hide based on menu state -->
+        <div class="sm:hidden hidden" id="mobile-menu">
+            <div class="pt-2 pb-3 space-y-1">
+                <a href="{% url 'home' %}" class="block px-3 py-2 text-base font-medium hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Home</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'room_list' %}" class="block px-3 py-2 text-base font-medium hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Study Rooms</a>
+                    <a href="{% url 'profile' %}" class="block px-3 py-2 text-base font-medium hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Profile</a>
+                    <a href="{% url 'logout' %}" class="block px-3 py-2 text-base font-medium hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="block px-3 py-2 text-base font-medium hover:bg-indigo-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200">Login</a>
+                    <a href="{% url 'signup' %}" class="block px-3 py-2 text-base font-medium bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
     </nav>
 
-    <div class="container">
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Alerts -->
         {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
+            <div class="mb-8">
+                {% for message in messages %}
+                    <div class="p-4 mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300{% elif message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300{% else %}bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300{% endif %} transition-all">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                {% if message.tags == 'success' %}
+                                    <i class="fa-solid fa-check-circle text-green-600 dark:text-green-400"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="fa-solid fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-info-circle text-blue-600 dark:text-blue-400"></i>
+                                {% endif %}
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm">{{ message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
-        
+
+        <!-- Page content -->
         {% block content %}{% endblock %}
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-800 shadow-inner mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fa-solid fa-brain text-indigo-600 dark:text-indigo-400 text-xl mr-2"></i>
+                    <span class="font-bold text-lg text-indigo-600 dark:text-indigo-400">FocusHub</span>
+                </div>
+                <div class="text-center md:text-right text-sm text-gray-500 dark:text-gray-400">
+                    <p>© 2025 FocusHub. All rights reserved.</p>
+                    <p class="mt-1">AI-Powered Virtual Study Rooms</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for theme toggle -->
+    <script>
+        // Theme toggle functionality
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // Set the initial icon based on current theme
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        // Toggle theme on button click
+        themeToggleBtn.addEventListener('click', function() {
+            // Toggle dark mode class on html element
+            document.documentElement.classList.toggle('dark');
+            
+            // Update the icons
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            
+            // Update localStorage
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.theme = 'dark';
+            } else {
+                localStorage.theme = 'light';
+            }
+        });
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

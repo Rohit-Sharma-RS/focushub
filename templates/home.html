@@ -1,17 +1,221 @@
-<!-- templates/home.html -->
 {% extends 'base.html' %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h1>Welcome to FocusHub</h1>
-    <p>AI-Powered Virtual Study Rooms to boost your productivity</p>
+<div class="flex flex-col lg:flex-row">
+    <!-- Left column: Hero/Welcome section -->
+    <div class="w-full lg:w-3/5 mb-8 lg:mb-0 lg:pr-8">
+        <div class="rounded-2xl overflow-hidden shadow-lg glass">
+            <div class="bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-900 p-8 text-white">
+                <h1 class="text-4xl font-bold mb-4">Welcome to FocusHub</h1>
+                <p class="text-xl mb-6">AI-Powered Virtual Study Rooms to boost your productivity</p>
+                
+                {% if user.is_authenticated %}
+                    <div class="bg-white/10 rounded-lg p-4 mb-6 backdrop-blur-sm">
+                        <div class="flex items-center mb-2">
+                            <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold mr-3">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-lg">Hello, {{ user.username }}!</p>
+                                <p class="text-indigo-100">Ready to focus today?</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fa-solid fa-fire text-orange-500 mr-2"></i>
+                            <span class="font-medium">Current streak: {{ user.profile.streak }} days</span>
+                        </div>
+                    </div>
+                    
+                    <a href="{% url 'room_list' %}" class="inline-flex items-center bg-white text-indigo-700 hover:bg-indigo-50 font-medium px-6 py-3 rounded-lg shadow-lg transition-all">
+                        <i class="fa-solid fa-door-open mr-2"></i>
+                        View Study Rooms
+                    </a>
+                {% else %}
+                    <div class="mb-8 space-y-4">
+                        <div class="flex items-center">
+                            <div class="bg-white/20 p-2 rounded-full mr-4">
+                                <i class="fa-solid fa-brain text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-lg">AI-Powered Assistance</h3>
+                                <p>Get real-time motivational messages and study summaries</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="bg-white/20 p-2 rounded-full mr-4">
+                                <i class="fa-solid fa-users text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-lg">Collaborative Learning</h3>
+                                <p>Join topic-based study rooms with like-minded people</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="bg-white/20 p-2 rounded-full mr-4">
+                                <i class="fa-solid fa-chart-line text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-lg">Track Your Progress</h3>
+                                <p>Monitor productivity with detailed analytics</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{% url 'login' %}" class="inline-flex justify-center items-center bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-lg transition-all">
+                            <i class="fa-solid fa-sign-in-alt mr-2"></i>
+                            Login
+                        </a>
+                        <a href="{% url 'signup' %}" class="inline-flex justify-center items-center bg-white text-indigo-700 hover:bg-indigo-50 font-medium px-6 py-3 rounded-lg shadow-lg transition-all">
+                            <i class="fa-solid fa-user-plus mr-2"></i>
+                            Sign Up
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Feature highlights section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
+                <div class="text-indigo-600 dark:text-indigo-400 mb-3">
+                    <i class="fa-solid fa-clock text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Pomodoro Timer</h3>
+                <p class="text-gray-600 dark:text-gray-300">Stay focused with customizable study sessions and breaks</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
+                <div class="text-indigo-600 dark:text-indigo-400 mb-3">
+                    <i class="fa-solid fa-music text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Lo-Fi Music</h3>
+                <p class="text-gray-600 dark:text-gray-300">Enhance concentration with ambient background sounds</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
+                <div class="text-indigo-600 dark:text-indigo-400 mb-3">
+                    <i class="fa-solid fa-comments text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Group Discussions</h3>
+                <p class="text-gray-600 dark:text-gray-300">Collaborate with others in real-time study chats</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-all">
+                <div class="text-indigo-600 dark:text-indigo-400 mb-3">
+                    <i class="fa-solid fa-lightbulb text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Smart Summaries</h3>
+                <p class="text-gray-600 dark:text-gray-300">Get AI-generated summaries of your study discussions</p>
+            </div>
+        </div>
+    </div>
     
-    {% if user.is_authenticated %}
-        <p>Hello, {{ user.username }}!</p>
-        <p>Your current streak: {{ user.profile.streak }} days</p>
-        <p><a href="{% url 'room_list' %}">View Study Rooms</a></p>
-    {% else %}
-        <p>Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'signup' %}">sign up</a> to get started.</p>
-    {% endif %}
+    <!-- Right column: Available Rooms -->
+    <div class="w-full lg:w-2/5">
+        <!-- Active rooms section -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+            <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fa-solid fa-bolt text-amber-500 mr-2"></i>
+                Available Study Rooms
+            </h3>
+            
+            <div class="space-y-4">
+                {% if available_rooms %}
+                    {% for room in available_rooms %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <div class="h-10 w-10 rounded-full bg-{{ room.color|default:'indigo' }}-500 flex items-center justify-center text-white">
+                                        {{ room.name|first|upper }}
+                                    </div>
+                                    <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-slate-800"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="font-medium">{{ room.name }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ room.active_users }} active user{{ room.active_users|pluralize }}</p>
+                                </div>
+                            </div>
+                            <a href="{% url 'room_detail' room.id %}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">Join</a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-6">
+                        <div class="text-gray-400 mb-2">
+                            <i class="fa-solid fa-door-closed text-3xl"></i>
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400">No active rooms available right now</p>
+                        <a href="{% url 'create_room' %}" class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mt-2">
+                            <i class="fa-solid fa-plus mr-1"></i>
+                            Create a room
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mt-6 flex justify-between">
+                <a href="{% url 'room_list' %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center">
+                    View All Rooms
+                    <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
+                <a href="{% url 'create_room' %}" class="inline-flex items-center bg-indigo-600 text-white hover:bg-indigo-700 font-medium px-4 py-2 rounded-lg text-sm transition-all">
+                    <i class="fa-solid fa-plus mr-2"></i>
+                    New Room
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stats and activity section -->
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-700 rounded-xl shadow-md p-6 mt-8">
+            <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fa-solid fa-chart-bar text-indigo-600 dark:text-indigo-400 mr-2"></i>
+                Platform Stats
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 shadow-sm">
+                    <div class="text-center">
+                        <div class="text-indigo-600 dark:text-indigo-400 mb-1">
+                            <i class="fa-solid fa-users text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">{{ total_users|default:'0' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Active Users</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 shadow-sm">
+                    <div class="text-center">
+                        <div class="text-indigo-600 dark:text-indigo-400 mb-1">
+                            <i class="fa-solid fa-door-open text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">{{ total_rooms|default:'0' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Study Rooms</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 shadow-sm">
+                    <div class="text-center">
+                        <div class="text-indigo-600 dark:text-indigo-400 mb-1">
+                            <i class="fa-solid fa-clock text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">{{ total_hours|default:'0' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Hours Focused</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-800/50 rounded-lg p-4 shadow-sm">
+                    <div class="text-center">
+                        <div class="text-indigo-600 dark:text-indigo-400 mb-1">
+                            <i class="fa-solid fa-graduation-cap text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">{{ total_subjects|default:'0' }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Subjects</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
