@@ -3,20 +3,27 @@
 {% block title %}Create Room{% endblock %}
 
 {% block content %}
-    <h2>Create a New Study Room</h2>
-    <form method="post">
+<div class="max-w-lg mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-xl shadow-xl glass">
+    <h2 class="text-3xl font-bold text-center text-indigo-600 dark:text-indigo-400 mb-8">Create a New Study Room</h2>
+    <form method="post" class="space-y-6">
         {% csrf_token %}
         <div>
-            <label for="name">Room Name:</label>
-            <input type="text" id="name" name="name" required>
+            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room Name</label>
+            <input type="text" id="name" name="name" required
+                   class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                   placeholder="e.g., Quantum Physics Study Group">
         </div>
         <div>
-            <label for="description">Description:</label>
-            <textarea id="description" name="description"></textarea>
+            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <textarea id="description" name="description" rows="4"
+                      class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                      placeholder="A brief description of the room's purpose..."></textarea>
         </div>
         <div>
-            <label for="category">Category:</label>
-            <select id="category" name="category">
+            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+            <select id="category" name="category"
+                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 appearance-none bg-no-repeat bg-right-3 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]"
+                    style="background-size: 1.25em;">
                 <option value="General">General</option>
                 <option value="Mathematics">Mathematics</option>
                 <option value="Computer Science">Computer Science</option>
@@ -26,6 +33,10 @@
                 <option value="Business">Business</option>
             </select>
         </div>
-        <button type="submit">Create Room</button>
+        <button type="submit"
+                class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-900 transition-all duration-150 ease-in-out">
+            <i class="fa-solid fa-plus-circle mr-2"></i> Create Room
+        </button>
     </form>
+</div>
 {% endblock %}

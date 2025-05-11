@@ -238,7 +238,8 @@
     
     // Set up daily activity chart
     const dailyActivity = document.getElementById('dailyActivityChart');
-    const dailyData = [
+    
+     const dailyMinuteData = [
       {% for day in daily_stats %}
         {{ day.minutes }},
       {% endfor %}
@@ -246,8 +247,14 @@
     
     const dailyLabels = [
       {% for day in daily_stats %}
-        '{{ day.day }}',
+        '{{ day.day }}', // Make sure daily_stats in views.py provides 'day' key correctly
       {% endfor %}
+    ];
+
+    const dailySessionCountData = [
+        {% for count in daily_session_counts %}
+            {{ count }},
+        {% endfor %}
     ];
     
     const sessionCounts = [5, 3, 0, 4, 2, 6, 4]; // Sample data, replace with actual session counts
@@ -258,7 +265,7 @@
         labels: dailyLabels,
         datasets: [{
           label: 'Study Minutes',
-          data: dailyData,
+          data: dailyMinuteData,
           backgroundColor: 'rgba(79, 70, 229, 0.7)',
           borderColor: 'rgba(79, 70, 229, 1)',
           borderWidth: 1,
@@ -344,7 +351,7 @@
       document.getElementById('viewBySessions').classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
       
       dailyChart.data.datasets[0].label = 'Study Minutes';
-      dailyChart.data.datasets[0].data = dailyData;
+      dailyChart.data.datasets[0].data = dailyMinuteData; // Use the minutes data
       dailyChart.options.scales.y.title.text = 'Minutes';
       dailyChart.update();
     });
@@ -357,7 +364,7 @@
       document.getElementById('viewByHours').classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-700', 'dark:text-gray-300');
       
       dailyChart.data.datasets[0].label = 'Study Sessions';
-      dailyChart.data.datasets[0].data = sessionCounts;
+      dailyChart.data.datasets[0].data = dailySessionCountData; // Use the session count data
       dailyChart.options.scales.y.title.text = 'Sessions';
       dailyChart.update();
     });
@@ -368,10 +375,10 @@
       {
         type: 'doughnut',
         data: {
-          labels: ['Mathematics', 'Computer Science', 'Literature', 'Science', 'Languages'],
+          labels: [{% for label in category_labels %}'{{ label|escapejs }}',{% endfor %}],
           datasets: [{
-            data: [35, 25, 15, 15, 10],
-            backgroundColor: [
+            data: [{% for value in category_values %}{{ value }},{% endfor %}],
+            backgroundColor: [ // You can generate these dynamically or have a predefined list
               'rgba(99, 102, 241, 0.8)',  // Indigo
               'rgba(139, 92, 246, 0.8)',  // Purple
               'rgba(59, 130, 246, 0.8)',  // Blue
@@ -427,8 +434,10 @@
       {
         type: 'radar',
         data: {
-          labels: ['Morning', 'Afternoon', 'Evening', 'Night', 'Late Night', 'Early Morning'],
+          labels: [{% for label in time_of_day_labels %}'{{ label|escapejs }}',{% endfor %}],
           datasets: [{
+            label: 'Study Time Distribution',
+            data: [{% for value in time_of_day_values %}{{ value }},{% endfor %}],
             label: 'Study Time Distribution',
             data: [65, 85, 95, 60, 25, 30],
             backgroundColor: 'rgba(139, 92, 246, 0.2)',
@@ -515,7 +524,11 @@
       return data;
     };
     
-    const calendarData = generateCalendarData();
+    const calendarData = [
+        {% for item in study_calendar_data %}
+        { date: '{{ item.date }}', value: {{ item.value }} },
+        {% endfor %}
+    ];
     
     // Create the calendar heatmap
     const createCalendar = () => {

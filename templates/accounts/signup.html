@@ -1,13 +1,215 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Sign Up{% endblock %}
+{% block title %}Sign Up | FocusHub{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
 
 {% block content %}
-    <h2>Sign Up</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Sign Up</button>
-    </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+<div class="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md mx-auto">
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden transition-all backdrop-blur-sm border border-opacity-10 border-white">
+      <!-- Header with Gradient -->
+      <div class="relative h-24 bg-gradient-to-r from-indigo-500 to-purple-600">
+        <!-- Decorative Elements -->
+        <div class="absolute inset-0 opacity-20">
+          <div class="absolute top-0 left-0 w-16 h-16 bg-white rounded-full -ml-8 -mt-8"></div>
+          <div class="absolute top-8 right-8 w-12 h-12 bg-white rounded-full"></div>
+          <div class="absolute bottom-0 right-12 w-20 h-20 bg-white rounded-full mb-[-2.5rem]"></div>
+        </div>
+        
+        <!-- Title -->
+        <div class="absolute bottom-0 left-0 right-0 text-center mb-[-1.5rem]">
+          <div class="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg animate__animated animate__fadeInUp">
+            Join FocusHub
+          </div>
+        </div>
+      </div>
+      
+      <!-- Form Content -->
+      <div class="px-6 pt-12 pb-8">
+        <p class="text-center text-gray-600 dark:text-gray-400 mb-8">Create your account and start tracking your study progress</p>
+        
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          
+          {% for field in form %}
+            <div class="space-y-2">
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ field.label }}
+              </label>
+              
+              <div class="relative rounded-md shadow-sm">
+                {{ field }}
+                {% if field.errors %}
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                  </div>
+                {% endif %}
+              </div>
+              
+              {% if field.errors %}
+                {% for error in field.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+          
+          <div class="pt-4">
+            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] duration-300">
+              Create Account
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Footer -->
+      <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 text-center">
+        <p class="text-gray-600 dark:text-gray-400">
+          Already have an account? 
+          <a href="{% url 'login' %}" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
+            Log in
+          </a>
+        </p>
+      </div>
+    </div>
+    
+    <!-- Features Highlights -->
+    <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300 backdrop-blur-sm border border-opacity-10 border-white">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 mb-3">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Track Progress</h3>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Monitor your study habits and see your improvement over time</p>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300 backdrop-blur-sm border border-opacity-10 border-white">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 mb-3">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Study Rooms</h3>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Join virtual study rooms based on your interests and needs</p>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-1 duration-300 backdrop-blur-sm border border-opacity-10 border-white">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 mb-3">
+            <i class="fas fa-fire"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Build Habits</h3>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Maintain streaks and achieve consistency in your studies</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Style form inputs to match site aesthetic */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all duration-300;
+  }
+  
+  /* Animated focus effect for a more futuristic feel */
+  input:focus, select:focus {
+    @apply shadow-lg;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  }
+  
+  /* Error styling */
+  .errorlist {
+    @apply mt-1 list-none p-0 text-sm text-red-600 dark:text-red-400;
+  }
+  
+  /* Password field with strength meter */
+  input[type="password"] {
+    border-left: 4px solid #e5e7eb;
+  }
+  
+  input[type="password"]:focus {
+    border-left: 4px solid #6366f1;
+  }
+  
+  /* Custom animations */
+  @keyframes pulse-border {
+    0% { border-color: rgba(99, 102, 241, 0.4); }
+    50% { border-color: rgba(99, 102, 241, 0.8); }
+    100% { border-color: rgba(99, 102, 241, 0.4); }
+  }
+  
+  .form-error input, .form-error select {
+    @apply border-red-500;
+    animation: pulse-border 2s infinite;
+  }
+</style>
+
+<script>
+  // Add event listeners after DOM is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide default Django password validation messages
+    const passwordField = document.querySelector('input[type="password"]');
+    const helpText = passwordField.nextElementSibling;
+    
+    if (helpText && helpText.classList.contains('text-xs')) {
+      helpText.style.display = 'none';
+    }
+    
+    // Add futuristic focus effects
+    const allInputs = document.querySelectorAll('input, select');
+    
+    allInputs.forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.classList.add('relative');
+        
+        // Remove existing ripple if any
+        const existingRipple = this.parentElement.querySelector('.input-focus-ripple');
+        if (existingRipple) {
+          existingRipple.remove();
+        }
+        
+        // Create ripple effect
+        const ripple = document.createElement('span');
+        ripple.classList.add('input-focus-ripple', 'absolute', 'inset-0', 'rounded-lg', 'pointer-events-none');
+        ripple.style.background = 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 70%)';
+        ripple.style.animation = 'ripple-expand 1s ease-out';
+        
+        this.parentElement.appendChild(ripple);
+      });
+      
+      input.addEventListener('blur', function() {
+        const ripple = this.parentElement.querySelector('.input-focus-ripple');
+        if (ripple) {
+          ripple.style.animation = 'ripple-fade 0.5s forwards';
+          setTimeout(() => {
+            if (ripple.parentElement) {
+              ripple.remove();
+            }
+          }, 500);
+        }
+      });
+    });
+  });
+  
+  @keyframes ripple-expand {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  @keyframes ripple-fade {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+</script>
 {% endblock %}

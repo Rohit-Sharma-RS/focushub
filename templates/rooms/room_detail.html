@@ -3,365 +3,529 @@
 {% block title %}{{ room.name }}{% endblock %}
 
 {% block extra_head %}
+{# Custom styles moved to Tailwind classes or are minor enough not to need a separate block #}
 <style>
-    .chat-container { 
-        height: 400px; 
-        overflow-y: auto; 
-        border: 1px solid #ddd; 
-        padding: 10px; 
-        margin-bottom: 10px; 
+    /* For custom scrollbar, if desired over Tailwind's default */
+    #chat-messages::-webkit-scrollbar {
+        width: 8px;
     }
-    .message { 
-        margin-bottom: 10px; 
-        padding: 5px;
+    #chat-messages::-webkit-scrollbar-track {
+        background: transparent;
     }
-    .message-user { 
-        font-weight: bold; 
+    #chat-messages::-webkit-scrollbar-thumb {
+        background-color: rgba(128, 128, 128, 0.5);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
     }
-    .motivational { 
-        color: #2c5282; 
-        font-style: italic; 
-        margin: 10px 0; 
-        padding: 5px; 
-        background: #ebf8ff; 
-        border-left: 3px solid #4299e1; 
-    }
-    .timer { 
-        margin: 15px 0; 
-        font-size: 1.2em; 
-    }
-    .leaderboard { 
-        margin-top: 20px; 
-    }
-    .leaderboard-item { 
-        display: flex; 
-        justify-content: space-between;
-        padding: 5px 0;
-    }
-    .recommended { 
-        margin-top: 20px; 
-    }
-    .lo-fi-player {
-        margin: 15px 0;
+    .dark #chat-messages::-webkit-scrollbar-thumb {
+        background-color: rgba(100, 116, 139, 0.7); /* slate-500 with opacity */
     }
 </style>
 {% endblock %}
 
 {% block content %}
-    <h2>{{ room.name }}</h2>
-    <p>{{ room.description }}</p>
-    <p>Category: {{ room.category }}</p>
-    <p><a href="{% url 'leave_room' room.id %}">Leave Room</a></p>
-    
-    <div class="timer">
-        <span id="timer-display">25:00</span>
-        <div class="pomodoro-controls">
-            <button id="start-timer">Start</button>
-            <button id="pause-timer">Pause</button>
-            <button id="reset-timer">Reset</button>
-            <select id="pomodoro-mode">
-                <option value="pomodoro">Focus (25 min)</option>
-                <option value="short-break">Short Break (5 min)</option>
-                <option value="long-break">Long Break (15 min)</option>
-            </select>
-            <span id="pomodoro-status">Ready to focus</span>
-            <span id="pomodoro-count">Pomodoros: 0</span>
+<div class="space-y-8">
+    <!-- Room Header -->
+    <div class="pb-6 border-b border-gray-200 dark:border-slate-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 sm:mb-0">{{ room.name }}</h2>
+            <a href="{% url 'leave_room' room.id %}" onclick="return confirm('Are you sure you want to leave this room? This action cannot be undone.');"
+               class="px-4 py-2 text-sm font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-500 dark:border-red-500/70 hover:border-red-600 dark:hover:border-red-500 transition-all duration-150 ease-in-out self-start sm:self-center">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-1.5"></i> Leave Room
+            </a>
         </div>
+        <p class="text-gray-600 dark:text-gray-400 mt-2 text-base">{{ room.description|linebreaksbr }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-gray-400 dark:text-slate-500"></i> Category: <span class="font-medium">{{ room.category }}</span></p>
     </div>
-    
-    <div class="lo-fi-player">
-        <audio id="background-music" controls loop>
-            <source src="https://cdn.freesound.org/previews/531/531547_11404599-lq.mp3" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-        <audio id="timer-complete-sound">
-            <source src="https://cdn.freesound.org/previews/536/536096_11836187-lq.mp3" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-    </div>
-    
-    <div class="chat-container" id="chat-messages">
-        {% for message in messages %}
-            <div class="message">
-                <span class="message-user">{{ message.user.username }}:</span>
-                <span class="message-content">{{ message.content }}</span>
-            </div>
-        {% endfor %}
-    </div>
-    
-    <form id="chat-form">
-        {% csrf_token %}
-        <input type="text" id="chat-message-input" placeholder="Type your message here...">
-        <button type="submit">Send</button>
-    </form>
-    
-    <div class="summary-section">
-        <button id="summarize-button">Summarize Discussion</button>
-        <div id="summary-container" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f5;">
-            <div id="summary-content"></div>
-            <div id="summary-qa" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px; display: none;">
-                <h4>Ask about this summary</h4>
-                <input type="text" id="summary-question" placeholder="Ask a question about this discussion...">
-                <button id="ask-question-btn">Ask</button>
-                <div id="answer-container" style="margin-top: 10px; padding: 10px; background: #e9f5ff;"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="leaderboard">
-        <h3>Top Focused Users</h3>
-        <div>
-            {% for entry in leaderboard %}
-                <div class="leaderboard-item">
-                    <span>{{ entry.user__username }}</span>
-                    <span>{{ entry.total_time|floatformat:1 }} hours</span>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <!-- Left Column (Chat & Timer) -->
+        <div class="lg:col-span-2 space-y-6 lg:space-y-8">
+            <!-- Pomodoro Timer -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-1 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-stopwatch text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Pomodoro Timer
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Boost your productivity with focused work sessions.</p>
+                <div class="text-center mb-5">
+                    <span id="timer-display" class="text-6xl font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">25:00</span>
+                    <p id="pomodoro-status" class="text-sm text-gray-500 dark:text-gray-400 mt-1 h-5">Ready to focus</p>
                 </div>
-            {% endfor %}
+                <div class="pomodoro-controls grid grid-cols-2 sm:grid-cols-4 gap-3 items-center mb-4">
+                    <button id="start-timer" class="w-full col-span-1 sm:col-span-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                        <i class="fa-solid fa-play mr-1.5"></i>Start
+                    </button>
+                    <button id="pause-timer" class="w-full col-span-1 sm:col-span-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fa-solid fa-pause mr-1.5"></i>Pause
+                    </button>
+                    <button id="reset-timer" class="w-full col-span-1 sm:col-span-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                        <i class="fa-solid fa-rotate-right mr-1.5"></i>Reset
+                    </button>
+                    <select id="pomodoro-mode" class="col-span-2 sm:col-span-1 w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 appearance-none bg-no-repeat bg-right-3 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236B7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] dark:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23D1D5DB%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]"
+                            style="background-size: 1.25em;">
+                        <option value="pomodoro">Focus (25 min)</option>
+                        <option value="short-break">Short Break (5 min)</option>
+                        <option value="long-break">Long Break (15 min)</option>
+                    </select>
+                </div>
+                <div class="text-right text-sm text-gray-500 dark:text-gray-400">
+                    <span id="pomodoro-count">Pomodoros: 0</span>
+                </div>
+            </div>
+
+            <!-- Lo-fi Player -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-headphones-simple text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Background Music
+                </h3>
+                <audio id="background-music" controls loop class="w-full accent-indigo-500">
+                    <source src="https://cdn.freesound.org/previews/531/531547_11404599-lq.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                <audio id="timer-complete-sound" class="hidden"> <!-- Hidden, controlled by JS -->
+                    <source src="https://cdn.freesound.org/previews/536/536096_11836187-lq.mp3" type="audio/mpeg">
+                </audio>
+            </div>
+
+            <!-- Chat -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-comments text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Live Chat
+                </h3>
+                <div id="chat-messages" class="h-96 overflow-y-auto border border-gray-200 dark:border-slate-700 p-4 mb-4 rounded-lg bg-gray-50 dark:bg-slate-800/60 space-y-4">
+                    {# Messages are appended here by JS. This is for initial load if any, though typically live chat starts empty or loads history via JS #}
+                    {% for message_item in messages %} {# Renamed to avoid conflict with Django messages framework #}
+                        <div class="message flex {% if message_item.user == request.user %}justify-end{% endif %}">
+                            <div class="max-w-[80%] sm:max-w-[70%] p-3 rounded-xl {% if message_item.user == request.user %}bg-indigo-500 text-white shadow{% else %}bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-100 shadow{% endif %}">
+                                {% if message_item.user != request.user %}
+                                <span class="message-user block text-xs font-semibold mb-1 {% if message_item.user == request.user %}text-indigo-100{% else %}text-indigo-600 dark:text-indigo-400{% endif %}">{{ message_item.user.username }}</span>
+                                {% endif %}
+                                <span class="message-content text-sm break-words">{{ message_item.content }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <form id="chat-form" class="flex space-x-3 items-center">
+                    {% csrf_token %}
+                    <input type="text" id="chat-message-input" placeholder="Type your message..."
+                           class="flex-grow px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 transition-colors">
+                    <button type="submit"
+                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 transition-all duration-150 ease-in-out">
+                        <i class="fa-solid fa-paper-plane mr-0 sm:mr-2"></i> <span class="hidden sm:inline">Send</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column (Summary, Leaderboard, Recommended) -->
+        <div class="lg:col-span-1 space-y-6 lg:space-y-8">
+            <!-- AI Summary -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-microchip text-indigo-500 dark:text-indigo-400 mr-2.5"></i> AI Discussion Tools
+                </h3>
+                <button id="summarize-button" class="w-full mb-4 py-2.5 px-4 bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Summarize Discussion
+                </button>
+                <div id="summary-container" style="display: none;" class="mt-4 p-4 bg-gray-50 dark:bg-slate-700/60 rounded-lg border border-gray-200 dark:border-slate-600">
+                    <div id="summary-content" class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"></div>
+                    <div id="summary-qa" style="display: none;" class="mt-5 pt-4 border-t border-gray-300 dark:border-slate-600">
+                        <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Ask about this summary</h4>
+                        <div class="flex space-x-2">
+                            <input type="text" id="summary-question" placeholder="Your question..."
+                                   class="flex-grow px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 transition-colors">
+                            <button id="ask-question-btn" class="px-4 py-2 text-sm bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 dark:focus:ring-offset-slate-700">Ask</button>
+                        </div>
+                        <div id="answer-container" class="mt-3 p-3 text-sm bg-indigo-50 dark:bg-slate-600/70 rounded-lg prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-trophy mr-2.5 text-yellow-400 dark:text-yellow-500"></i> Top Focused Users
+                </h3>
+                <div class="space-y-3">
+                {% for entry in leaderboard %}
+                    <div class="leaderboard-item flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-700/60 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center">
+                        <span class="font-semibold text-gray-700 dark:text-gray-300 w-6 text-center mr-2">
+                        {{ forloop.counter }}.
+                        </span>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">
+                        {{ entry.username }}
+                        </span>
+                    </div>
+                    <span class="text-sm text-indigo-600 dark:text-indigo-400 font-semibold">
+                        {{ entry.hours }} hour {% if entry.hours != 1 %}s{% endif %}   
+                        {{ entry.minutes }} minute{% if entry.minutes != 1 %}s{% endif %}
+                    </span>
+                    </div>
+                {% endfor %}
+                </div>
+
+            </div>
+
+            <!-- Recommended Rooms -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fa-solid fa-compass mr-2.5 text-sky-500 dark:text-sky-400"></i> Recommended Rooms
+                </h3>
+                {% if recommended_rooms %}
+                <ul class="space-y-2">
+                    {% for rec_room in recommended_rooms %}
+                        <li>
+                            <a href="{% url 'room_detail' rec_room.id %}" class="flex items-center p-3 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-700/70 transition-all group">
+                                <i class="fa-solid fa-arrow-right-to-bracket text-indigo-500 dark:text-indigo-400 mr-3 group-hover:translate-x-1 transition-transform"></i>
+                                <div>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">{{ rec_room.name }}</span>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec_room.category }}</p>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No recommendations available right now.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
-    
-    <div class="recommended">
-        <h3>Recommended Rooms</h3>
-        <ul>
-            {% for rec_room in recommended_rooms %}
-                <li><a href="{% url 'room_detail' rec_room.id %}">{{ rec_room.name }}</a> ({{ rec_room.category }})</li>
-            {% endfor %}
-        </ul>
-    </div>
-    
+
     <script>
         const roomId = '{{ room.id }}';
-        const username = '{{ request.user.username }}';
+        // const currentUserId = '{{ request.user.id }}'; // Use if backend sends user_id with messages
+        const currentUsername = '{{ request.user.username }}';
         
+        const chatMessagesContainer = document.getElementById('chat-messages');
+
+        function appendMessageToChat(msgUsername, messageContent, isCurrentUser, motivationalMsg) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('message', 'flex', 'items-end', isCurrentUser ? 'justify-end' : 'justify-start');
+
+            const messageBubble = document.createElement('div');
+            messageBubble.classList.add('max-w-[80%]', 'sm:max-w-[70%]', 'p-3', 'rounded-xl', 'shadow');
+            if (isCurrentUser) {
+                messageBubble.classList.add('bg-indigo-500', 'text-white');
+            } else {
+                messageBubble.classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-800', 'dark:text-gray-100');
+                const userSpan = document.createElement('span');
+                userSpan.classList.add('message-user', 'block', 'text-xs', 'font-semibold', 'mb-0.5', 'text-indigo-600', 'dark:text-indigo-400');
+                userSpan.textContent = msgUsername;
+                messageBubble.appendChild(userSpan);
+            }
+
+            const contentSpan = document.createElement('span');
+            contentSpan.classList.add('message-content', 'text-sm', 'break-words', 'leading-relaxed');
+            contentSpan.textContent = messageContent;
+            messageBubble.appendChild(contentSpan);
+            
+            messageWrapper.appendChild(messageBubble);
+            chatMessagesContainer.appendChild(messageWrapper);
+
+            if (motivationalMsg) {
+                const motivationalElement = document.createElement('div');
+                motivationalElement.className = 'my-3 mx-auto max-w-[90%] p-3 rounded-lg bg-sky-100 dark:bg-sky-800/70 border-l-4 border-sky-500 dark:border-sky-400 text-sky-700 dark:text-sky-200 text-sm italic shadow';
+                motivationalElement.innerHTML = `<i class="fa-solid fa-lightbulb mr-2 opacity-80"></i> ${motivationalMsg}`;
+                chatMessagesContainer.appendChild(motivationalElement);
+            }
+            
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
+
         // WebSocket setup
         const chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/rooms/' + roomId + '/'
+            (window.location.protocol === "https:" ? "wss://" : "ws://") 
+            + window.location.host 
+            + '/ws/rooms/' + roomId + '/'
         );
         
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            const message = data.message;
-            const msgUsername = data.username;
-            const motivational = data.motivational_message;
-            
-            // Add message to chat
-            const chatMessages = document.getElementById('chat-messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message';
-            messageElement.innerHTML = `<span class="message-user">${msgUsername}:</span> <span class="message-content">${message}</span>`;
-            chatMessages.appendChild(messageElement);
-            
-            // Add motivational message if provided
-            if (motivational) {
-                const motivationalElement = document.createElement('div');
-                motivationalElement.className = 'motivational';
-                motivationalElement.textContent = motivational;
-                chatMessages.appendChild(motivationalElement);
-            }
-            
-            // Scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Assuming backend sends: data.message, data.username, data.motivational_message
+            // And optionally: data.user_id
+            const isCurrentUser = (data.username === currentUsername);
+            appendMessageToChat(data.username, data.message, isCurrentUser, data.motivational_message);
         };
         
         chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
+            console.error('Chat socket closed unexpectedly', e);
+            const errorElement = document.createElement('div');
+            errorElement.className = 'my-3 p-3 rounded-lg bg-red-100 dark:bg-red-800/70 border-l-4 border-red-500 text-red-700 dark:text-red-200 text-sm shadow';
+            errorElement.innerHTML = '<i class="fa-solid fa-circle-exclamation mr-2"></i> Chat connection lost. Please refresh the page to reconnect.';
+            chatMessagesContainer.appendChild(errorElement);
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        };
+
+        chatSocket.onerror = function(err) {
+            console.error('WebSocket Error: ', err);
         };
         
-        // Send message
         document.querySelector('#chat-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const messageInput = document.querySelector('#chat-message-input');
-            const message = messageInput.value;
+            const message = messageInput.value.trim();
             
-            if (message.trim() === '') {
+            if (message === '' || chatSocket.readyState !== WebSocket.OPEN) {
+                if (chatSocket.readyState !== WebSocket.OPEN) {
+                    console.warn("WebSocket not open. Message not sent.");
+                }
                 return;
             }
             
             chatSocket.send(JSON.stringify({
                 'message': message,
-                'username': username
+                'username': currentUsername // Backend should verify/use authenticated user
             }));
             
             messageInput.value = '';
+            messageInput.focus();
         });
         
+        // Pomodoro Timer Logic
         let timerInterval;
-        let secondsRemaining = 25 * 60;
+        let secondsRemaining; // Initialized by switchMode
         let timerRunning = false;
         let pomodoroCount = 0;
-        let totalFocusSeconds = 0;
+        let totalFocusSecondsAccumulated = 0; // Accumulates focus time for current session/mode
+        let currentMode = 'pomodoro';
+
         const pomodoroSettings = {
             'pomodoro': 25 * 60,
             'short-break': 5 * 60,
             'long-break': 15 * 60
         };
-        let currentMode = 'pomodoro';
         
-        function updateTimerDisplay() {
-            const hours = Math.floor(secondsRemaining / 3600);
-            const minutes = Math.floor((secondsRemaining % 3600) / 60);
-            const secs = secondsRemaining % 60;
-        
-            document.getElementById('timer-display').textContent =
-                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const timerDisplayEl = document.getElementById('timer-display');
+        const startTimerBtnEl = document.getElementById('start-timer');
+        const pauseTimerBtnEl = document.getElementById('pause-timer');
+        const resetTimerBtnEl = document.getElementById('reset-timer');
+        const pomodoroModeSelectEl = document.getElementById('pomodoro-mode');
+        const pomodoroStatusEl = document.getElementById('pomodoro-status');
+        const pomodoroCountDisplayEl = document.getElementById('pomodoro-count');
+        const timerCompleteSoundEl = document.getElementById('timer-complete-sound');
+
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplayUI() {
+            timerDisplayEl.textContent = formatTime(secondsRemaining);
         }
         
-        function updateServerTimer() {
-            if (currentMode === 'pomodoro' && totalFocusSeconds > 0 && totalFocusSeconds % 300 === 0) {
-                const focusHours = totalFocusSeconds / 3600;
-                fetch('{% url "update_timer" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify({
-                        'duration': focusHours.toFixed(2),
-                        'room_id': roomId
-                    })
-                });
+        function updateServerFocusTime(durationInSeconds) {
+            if (durationInSeconds <= 0) return;
+
+            console.log(`Updating server with ${durationInSeconds} seconds of focus time.`);
+            fetch('{% url "update_timer" %}', { // Ensure this URL is correctly defined in Django
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    'duration_seconds': durationInSeconds,
+                    'room_id': roomId
+                })
+            }).then(response => {
+                if (!response.ok) console.error("Failed to update timer on server. Status: " + response.status);
+                else console.log("Focus time successfully updated on server.");
+            }).catch(error => console.error("Error updating timer on server:", error));
+        }
+        
+        function switchMode(newMode, sendFocusUpdate = true) {
+            if (timerRunning && currentMode === 'pomodoro' && sendFocusUpdate) { // If switching while timer was running
+                updateServerFocusTime(totalFocusSecondsAccumulated);
             }
+            totalFocusSecondsAccumulated = 0; // Reset for the new mode
+
+            currentMode = newMode;
+            secondsRemaining = pomodoroSettings[newMode];
+            pomodoroModeSelectEl.value = newMode;
+        
+            const statusText = {
+                'pomodoro': 'Focus time! Let\'s go!',
+                'short-break': 'Time for a short break.',
+                'long-break': 'Take a well-deserved long break.'
+            };
+            pomodoroStatusEl.textContent = statusText[newMode] || 'Ready';
+        
+            updateTimerDisplayUI();
+            timerRunning = false;
+            if(timerInterval) clearInterval(timerInterval);
+
+            startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Start';
+            startTimerBtnEl.disabled = false;
+            startTimerBtnEl.classList.remove('bg-orange-500', 'hover:bg-orange-600', 'bg-gray-500', 'cursor-not-allowed');
+            startTimerBtnEl.classList.add('bg-green-500', 'hover:bg-green-600');
+            
+            pauseTimerBtnEl.innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i>Pause';
+            pauseTimerBtnEl.disabled = true;
         }
         
-        function switchMode(mode) {
-            currentMode = mode;
-            secondsRemaining = pomodoroSettings[mode];
-            document.getElementById('pomodoro-mode').value = mode;
-        
-            const statusElement = document.getElementById('pomodoro-status');
-            statusElement.textContent =
-                mode === 'pomodoro' ? 'Focus time!' :
-                mode === 'short-break' ? 'Take a short break' : 'Take a long break';
-        
-            updateTimerDisplay();
-        }
-        
-        function timerComplete() {
-            document.getElementById('timer-complete-sound').play();
+        function handleTimerCompletion() {
+            timerCompleteSoundEl.play().catch(e => console.warn("Audio play failed:", e)); // Autoplay policy might block
         
             if (Notification.permission === 'granted') {
-                new Notification('Timer Complete', {
-                    body: currentMode === 'pomodoro' ? 'Time for a break!' : 'Back to focus time!',
-                    icon: '/static/favicon.ico'
+                new Notification('FocusHub Timer Complete!', {
+                    body: currentMode === 'pomodoro' ? 'Great focus session! Time for a break.' : 'Break over! Time to get back to focus.',
+                    icon: "{% url 'home' %}favicon.ico" // Adjust if you have a static favicon URL setup
                 });
             }
         
             if (currentMode === 'pomodoro') {
+                updateServerFocusTime(totalFocusSecondsAccumulated); // Update for the completed pomodoro
+                totalFocusSecondsAccumulated = 0; 
                 pomodoroCount++;
-                document.getElementById('pomodoro-count').textContent = `Pomodoros: ${pomodoroCount}`;
-                switchMode(pomodoroCount % 4 === 0 ? 'long-break' : 'short-break');
-            } else {
-                switchMode('pomodoro');
+                pomodoroCountDisplayEl.textContent = `Pomodoros: ${pomodoroCount}`;
+                switchMode(pomodoroCount % 4 === 0 ? 'long-break' : 'short-break', false);
+            } else { // Break finished
+                switchMode('pomodoro', false);
             }
-        
-            timerRunning = false;
-            clearInterval(timerInterval);
         }
         
-        document.getElementById('start-timer').addEventListener('click', function () {
-            if (!timerRunning) {
-                if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                    Notification.requestPermission();
-                }
-        
-                timerRunning = true;
-                this.textContent = 'Running...';
-                document.getElementById('pause-timer').disabled = false;
-        
-                timerInterval = setInterval(function () {
-                    if (secondsRemaining <= 0) {
-                        clearInterval(timerInterval);
-                        timerComplete();
-                    } else {
-                        secondsRemaining--;
-                        if (currentMode === 'pomodoro') {
-                            totalFocusSeconds++;
-                        }
-                        updateTimerDisplay();
-                        updateServerTimer();
-                    }
-                }, 1000);
+        startTimerBtnEl.addEventListener('click', function () {
+            if (timerRunning) return; // Already running
+
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") console.log("Notification permission granted.");
+                    else console.log("Notification permission denied or dismissed.");
+                });
             }
-        });
-        
-        document.getElementById('pause-timer').addEventListener('click', function () {
-            if (timerRunning) {
-                timerRunning = false;
-                clearInterval(timerInterval);
-                document.getElementById('start-timer').textContent = 'Resume';
-                this.disabled = true;
-        
+    
+            timerRunning = true;
+            this.innerHTML = '<i class="fa-solid fa-hourglass-half mr-1.5"></i>Running...';
+            this.disabled = true;
+            this.classList.remove('bg-green-500', 'hover:bg-green-600', 'bg-orange-500', 'hover:bg-orange-600');
+            this.classList.add('bg-gray-500', 'cursor-not-allowed');
+            
+            pauseTimerBtnEl.disabled = false;
+            pomodoroStatusEl.textContent = currentMode === 'pomodoro' ? 'Focusing...' : 'On a break...';
+
+            timerInterval = setInterval(function () {
+                secondsRemaining--;
                 if (currentMode === 'pomodoro') {
-                    const focusHours = totalFocusSeconds / 3600;
-                    fetch('{% url "update_timer" %}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                        },
-                        body: JSON.stringify({
-                            'duration': focusHours.toFixed(2),
-                            'room_id': roomId
-                        })
-                    });
+                    totalFocusSecondsAccumulated++;
                 }
+                updateTimerDisplayUI();
+
+                if (secondsRemaining < 0) { // Changed to < 0 to ensure 00:00 is displayed
+                    clearInterval(timerInterval);
+                    handleTimerCompletion();
+                }
+            }, 1000);
+        });
+        
+        pauseTimerBtnEl.addEventListener('click', function () {
+            if (!timerRunning) return; // Not running, nothing to pause
+
+            timerRunning = false;
+            clearInterval(timerInterval);
+            
+            startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Resume';
+            startTimerBtnEl.disabled = false;
+            startTimerBtnEl.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-green-500', 'hover:bg-green-600');
+            startTimerBtnEl.classList.add('bg-orange-500', 'hover:bg-orange-600');
+
+            this.innerHTML = '<i class="fa-solid fa-circle-pause mr-1.5"></i>Paused';
+            this.disabled = true;
+            pomodoroStatusEl.textContent = 'Timer Paused';
+    
+            if (currentMode === 'pomodoro') {
+                // Focus time is already accumulated in totalFocusSecondsAccumulated per second
+                // Optionally send an update here if you want partial updates on pause
+                // updateServerFocusTime(totalFocusSecondsAccumulated); 
+                // However, it's better to send full pomodoro or on reset/switch.
             }
         });
         
-        document.getElementById('reset-timer').addEventListener('click', function () {
+        resetTimerBtnEl.addEventListener('click', function () {
+            if (currentMode === 'pomodoro' && totalFocusSecondsAccumulated > 0) {
+                 updateServerFocusTime(totalFocusSecondsAccumulated); // Save any accumulated focus time
+            }
+            totalFocusSecondsAccumulated = 0; 
+            
             timerRunning = false;
             clearInterval(timerInterval);
-            totalFocusSeconds = 0;
-            document.getElementById('start-timer').textContent = 'Start';
-            document.getElementById('pause-timer').disabled = false;
-            switchMode(currentMode);
+            secondsRemaining = pomodoroSettings[currentMode]; 
+            updateTimerDisplayUI();
+
+            startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Start';
+            startTimerBtnEl.disabled = false;
+            startTimerBtnEl.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-orange-500', 'hover:bg-orange-600');
+            startTimerBtnEl.classList.add('bg-green-500', 'hover:bg-green-600');
+            
+            pauseTimerBtnEl.innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i>Pause';
+            pauseTimerBtnEl.disabled = true;
+
+            const statusText = {
+                'pomodoro': 'Ready to focus',
+                'short-break': 'Ready for short break',
+                'long-break': 'Ready for long break'
+            };
+            pomodoroStatusEl.textContent = statusText[currentMode];
         });
         
-        document.getElementById('pomodoro-mode').addEventListener('change', function () {
-            const mode = this.value;
-            timerRunning = false;
-            clearInterval(timerInterval);
-            totalFocusSeconds = 0;
-            switchMode(mode);
+        pomodoroModeSelectEl.addEventListener('change', function () {
+            switchMode(this.value, true);
         });
         
-        
-        // Summarize functionality using Groq API
-        document.getElementById('summarize-button').addEventListener('click', function() {
-            const summaryContainer = document.getElementById('summary-container');
-            const summaryContent = document.getElementById('summary-content');
-            const summaryQA = document.getElementById('summary-qa');
+        // Initial Pomodoro Setup
+        switchMode(currentMode, false); // Initialize timer display and mode without sending update
+
+        // Summarize functionality
+        const summarizeButtonEl = document.getElementById('summarize-button');
+        const summaryContainerEl = document.getElementById('summary-container');
+        const summaryContentEl = document.getElementById('summary-content');
+        const summaryQAEl = document.getElementById('summary-qa');
+        const askQuestionBtnEl = document.getElementById('ask-question-btn');
+        const summaryQuestionInputEl = document.getElementById('summary-question');
+        const answerContainerEl = document.getElementById('answer-container');
+
+        summarizeButtonEl.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generating...';
+            summaryContentEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating summary with AI...</p>';
+            summaryContainerEl.style.display = 'block';
+            summaryQAEl.style.display = 'none';
+            answerContainerEl.innerHTML = '';
             
-            // Show loading state
-            summaryContent.innerHTML = '<p>Generating summary with Groq AI...</p>';
-            summaryContainer.style.display = 'block';
-            
-            // Call our API endpoint that uses Groq
             fetch(`/rooms/${roomId}/summarize/`)
                 .then(response => response.json())
                 .then(data => {
-                    summaryContent.innerHTML = `<p>${data.summary}</p>`;
-                    summaryQA.style.display = 'block';
+                    if(data.error) {
+                        summaryContentEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
+                    } else {
+                        summaryContentEl.innerHTML = `<p>${data.summary.replace(/\n/g, '<br>')}</p>`; // Basic formatting
+                        summaryQAEl.style.display = 'block';
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching summary:', error);
-                    summaryContent.innerHTML = '<p>Error generating summary. Please try again.</p>';
+                    summaryContentEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error generating summary. Please try again.</p>';
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Summarize Discussion';
                 });
         });
         
-        // Question answering functionality
-        document.getElementById('ask-question-btn').addEventListener('click', function() {
-            const question = document.getElementById('summary-question').value;
-            const answerContainer = document.getElementById('answer-container');
+        askQuestionBtnEl.addEventListener('click', function() {
+            const question = summaryQuestionInputEl.value.trim();
+            if (!question) return;
+
+            this.disabled = true;
+            const originalButtonText = this.textContent;
+            this.textContent = 'Asking...';
             
-            if (!question.trim()) {
-                return;
-            }
+            answerContainerEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Thinking about your question...</p>';
             
-            // Show loading state
-            answerContainer.innerHTML = '<p>Thinking about your question...</p>';
-            
-            // Call our API endpoint for Q&A
             fetch(`/rooms/${roomId}/ask/`, {
                 method: 'POST',
                 headers: {
@@ -373,25 +537,31 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
-                        answerContainer.innerHTML = `<p class="error">${data.error}</p>`;
+                        answerContainerEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
                     } else {
-                        answerContainer.innerHTML = `<p><strong>Q: ${question}</strong></p><p>${data.answer}</p>`;
+                        answerContainerEl.innerHTML = `
+                            <p class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Q: ${question}</p>
+                            <p>${data.answer.replace(/\n/g, '<br>')}</p>`;
                     }
                 })
                 .catch(error => {
                     console.error('Error asking question:', error);
-                    answerContainer.innerHTML = '<p>Error processing your question. Please try again.</p>';
+                    answerContainerEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error processing your question. Please try again.</p>';
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.textContent = originalButtonText;
                 });
             
-            // Clear question input
-            document.getElementById('summary-question').value = '';
+            summaryQuestionInputEl.value = '';
         });
         
-        // Allow pressing Enter to submit question
-        document.getElementById('summary-question').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('ask-question-btn').click();
+        summaryQuestionInputEl.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for newlines if textarea
+                e.preventDefault(); // Prevent form submission if it's part of a form
+                askQuestionBtnEl.click();
             }
         });
     </script>
+</div>
 {% endblock %}

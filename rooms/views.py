@@ -44,11 +44,23 @@ def room_detail(request, room_id):
     # Start a study session
     StudySession.objects.create(user=request.user, room=room)
     
-    # Get leaderboard data
-    leaderboard = StudySession.objects.filter(room=room) \
-                .values('user__username') \
-                .annotate(total_time=Sum('duration')) \
-                .order_by('-total_time')[:5]
+    # Get raw leaderboard totals (in minutes)
+    leaderboard_raw = StudySession.objects.filter(room=room) \
+        .values('user__username') \
+        .annotate(total_time=Sum('duration')) \
+        .order_by('-total_time')[:5]
+
+    # Convert minutes → hours/minutes
+    leaderboard = []
+    for entry in leaderboard_raw:
+        total_minutes = entry['total_time'] or 0
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        leaderboard.append({
+            'username': entry['user__username'],
+            'hours': hours,
+            'minutes': minutes,
+        })
     
     # Get recommended rooms
     recommended_rooms = get_recommended_rooms(room)

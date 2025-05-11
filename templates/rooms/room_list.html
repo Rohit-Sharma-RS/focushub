@@ -3,34 +3,79 @@
 {% block title %}Study Rooms{% endblock %}
 
 {% block content %}
-    <h2>Study Rooms</h2>
-    <p><a href="{% url 'create_room' %}">Create New Room</a></p>
-    
-    <h3>Your Rooms</h3>
-    {% if user_rooms %}
-        <ul>
-        {% for room in user_rooms %}
-            <li>
-                <a href="{% url 'room_detail' room.id %}">{{ room.name }}</a>
-                <small>({{ room.category }})</small>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>You haven't joined any rooms yet.</p>
-    {% endif %}
-    
-    <h3>All Rooms</h3>
-    {% if rooms %}
-        <ul>
-        {% for room in rooms %}
-            <li>
-                <a href="{% url 'room_detail' room.id %}">{{ room.name }}</a>
-                <small>({{ room.category }} - {{ room.members.count }} members)</small>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No study rooms available.</p>
-    {% endif %}
+<div class="space-y-12">
+    <div class="flex flex-col sm:flex-row justify-between items-center pb-6 border-b border-gray-200 dark:border-slate-700">
+        <h2 class="text-3xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 sm:mb-0">Study Rooms</h2>
+        <a href="{% url 'create_room' %}"
+           class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-900 transition-all duration-150 ease-in-out">
+            <i class="fa-solid fa-plus mr-2"></i> Create New Room
+        </a>
+    </div>
+
+    <section>
+        <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6 pb-2 border-b border-gray-200 dark:border-slate-700">
+            <i class="fa-solid fa-star mr-2 text-yellow-500"></i> Your Rooms
+        </h3>
+        {% if user_rooms %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for room in user_rooms %}
+                <a href="{% url 'room_detail' room.id %}"
+                   class="block p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl glass hover:scale-105 transform transition-all duration-300 ease-in-out group">
+                    <h4 class="text-xl font-semibold text-indigo-600 dark:text-indigo-400 mb-2 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">{{ room.name }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <i class="fa-solid fa-tag mr-1 text-gray-400 dark:text-slate-500"></i> {{ room.category }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fa-solid fa-users mr-1 text-gray-400 dark:text-slate-500"></i> {{ room.members.count }} member{{ room.members.count|pluralize }}
+                    </p>
+                    <span class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <i class="fa-solid fa-arrow-right text-indigo-500 dark:text-indigo-400"></i>
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-8 bg-white dark:bg-slate-800 rounded-xl shadow-md glass text-center">
+                <i class="fa-solid fa-door-closed text-5xl text-gray-400 dark:text-slate-500 mb-4"></i>
+                <p class="text-lg text-gray-700 dark:text-gray-300 mb-2">You haven't joined or created any rooms yet.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Why not <a href="{% url 'create_room' %}" class="text-indigo-500 hover:underline font-medium">create one</a> or explore all rooms below?
+                </p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section>
+        <h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6 pb-2 border-b border-gray-200 dark:border-slate-700">
+            <i class="fa-solid fa-globe mr-2 text-sky-500"></i> All Rooms
+        </h3>
+        {% if rooms %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for room in rooms %}
+                <a href="{% url 'room_detail' room.id %}"
+                   class="block p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl glass hover:scale-105 transform transition-all duration-300 ease-in-out group">
+                    <h4 class="text-xl font-semibold text-indigo-600 dark:text-indigo-400 mb-2 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">{{ room.name }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <i class="fa-solid fa-tag mr-1 text-gray-400 dark:text-slate-500"></i> {{ room.category }}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fa-solid fa-users mr-1 text-gray-400 dark:text-slate-500"></i> {{ room.members.count }} member{{ room.members.count|pluralize }}
+                    </p>
+                    <span class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <i class="fa-solid fa-arrow-right text-indigo-500 dark:text-indigo-400"></i>
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+             <div class="p-8 bg-white dark:bg-slate-800 rounded-xl shadow-md glass text-center">
+                <i class="fa-solid fa-magnifying-glass text-5xl text-gray-400 dark:text-slate-500 mb-4"></i>
+                <p class="text-lg text-gray-700 dark:text-gray-300 mb-2">No study rooms available at the moment.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Be the first to <a href="{% url 'create_room' %}" class="text-indigo-500 hover:underline font-medium">create one</a>!
+                </p>
+            </div>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}

@@ -1,7 +1,93 @@
 {% extends 'base.html' %}
-{% block title %}Logged Out{% endblock %}
+{% load static %}
+
+{% block title %}Logged Out | FocusHub{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
+
 {% block content %}
-<h2>You have been logged out</h2>
-<p>Thank you for using FocusHub. You have been successfully logged out.</p>
-<p><a href="{% url 'login' %}">Log in again</a></p>
+<div class="container mx-auto py-16 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md mx-auto">
+    <!-- Logout Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden transition-all animate__animated animate__fadeIn">
+      <!-- Header with Gradient -->
+      <div class="relative h-24 bg-gradient-to-r from-indigo-500 to-purple-600">
+        <!-- Decorative Elements -->
+        <div class="absolute inset-0 opacity-20">
+          <div class="absolute top-0 left-0 w-16 h-16 bg-white rounded-full -ml-8 -mt-8"></div>
+          <div class="absolute top-8 right-8 w-12 h-12 bg-white rounded-full"></div>
+          <div class="absolute bottom-0 right-12 w-20 h-20 bg-white rounded-full mb-[-2.5rem]"></div>
+        </div>
+        
+        <!-- Icon -->
+        <div class="absolute bottom-0 left-0 right-0 text-center mb-[-1.5rem]">
+          <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 text-xl shadow-lg animate__animated animate__fadeInUp">
+            <i class="fas fa-check"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="px-6 pt-12 pb-8 text-center">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Successfully Logged Out</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">
+          Thank you for using FocusHub. We hope to see you again soon!
+        </p>
+        
+        <div class="flex flex-col space-y-4">
+          <a href="{% url 'login' %}" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] duration-300">
+            Log In Again
+          </a>
+          
+          <a href="/" class="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+            Return to Home
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="mt-12">
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
+        <h3 class="text-lg font-semibold mb-6 text-gray-800 dark:text-gray-200 text-center">Your FocusHub Impact</h3>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div class="text-center">
+            <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 mb-3">
+              <i class="fas fa-clock text-2xl"></i>
+            </div>
+            <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200">Study Time</h4>
+            <div class="mt-1 text-3xl font-bold text-indigo-600 dark:text-indigo-400">2,540</div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">minutes logged</p>
+          </div>
+          
+          <div class="text-center">
+            <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 mb-3">
+              <i class="fas fa-trophy text-2xl"></i>
+            </div>
+            <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200">Achievement</h4>
+            <div class="mt-1 text-3xl font-bold text-purple-600 dark:text-purple-400">14</div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">badges earned</p>
+          </div>
+        </div>
+        
+        <div class="mt-8 text-center">
+          <p class="text-gray-600 dark:text-gray-400">
+            <span class="font-medium">Pro tip:</span> Consistent daily study leads to 80% better retention
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Return Call to Action -->
+    <div class="mt-8 text-center">
+      <div class="inline-flex items-center px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm animate__animated animate__pulse animate__infinite animate__slow">
+        <i class="fas fa-lightbulb mr-2"></i>
+        <span>We'll save your progress for when you return!</span>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

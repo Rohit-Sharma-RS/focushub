@@ -1,13 +1,143 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Login | FocusHub{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
 
 {% block content %}
-    <h2>Login</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
-    </form>
-    <p>Don't have an account? <a href="{% url 'signup' %}">Sign up</a></p>
+<div class="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md mx-auto">
+    <!-- Login Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden transition-all animate__animated animate__fadeIn">
+      <!-- Header with Gradient -->
+      <div class="relative h-24 bg-gradient-to-r from-indigo-500 to-purple-600">
+        <!-- Decorative Elements -->
+        <div class="absolute inset-0 opacity-20">
+          <div class="absolute top-0 left-0 w-16 h-16 bg-white rounded-full -ml-8 -mt-8"></div>
+          <div class="absolute top-8 right-8 w-12 h-12 bg-white rounded-full"></div>
+          <div class="absolute bottom-0 right-12 w-20 h-20 bg-white rounded-full mb-[-2.5rem]"></div>
+        </div>
+        
+        <!-- Title -->
+        <div class="absolute bottom-0 left-0 right-0 text-center mb-[-1.5rem]">
+          <div class="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg animate__animated animate__fadeInUp">
+            Welcome Back
+          </div>
+        </div>
+      </div>
+      
+      <!-- Login Form Content -->
+      <div class="px-6 pt-12 pb-8">
+        <p class="text-center text-gray-600 dark:text-gray-400 mb-8">Log in to continue your study journey</p>
+        
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          
+          {% for field in form %}
+            <div class="space-y-2">
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ field.label }}
+              </label>
+              
+              <div class="relative rounded-md shadow-sm">
+                {{ field }}
+                {% if field.errors %}
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                  </div>
+                {% endif %}
+              </div>
+              
+              {% if field.errors %}
+                {% for error in field.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+              <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                Remember me
+              </label>
+            </div>
+            
+            <div class="text-sm">
+              <a href="#" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                Forgot password?
+              </a>
+            </div>
+          </div>
+          
+          <div class="pt-4">
+            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] duration-300">
+              Sign In
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Footer -->
+      <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700/50 text-center">
+        <p class="text-gray-600 dark:text-gray-400">
+          Don't have an account? 
+          <a href="{% url 'signup' %}" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
+            Sign up
+          </a>
+        </p>
+      </div>
+    </div>
+    
+    <!-- Current Streak Animation -->
+    <div class="mt-12 text-center">
+      <div class="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-medium animate__animated animate__pulse animate__infinite animate__slow shadow-lg">
+        <i class="fas fa-fire mr-2"></i>
+        <span class="text-lg font-bold">Join 5000+ students improving every day</span>
+      </div>
+    </div>
+    
+    <!-- Feature Highlights -->
+    <div class="mt-12">
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">What our users are saying</h3>
+        
+        <div class="space-y-4">
+          <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 border-l-4 border-indigo-500">
+            <p class="text-sm text-gray-600 dark:text-gray-400">"FocusHub helped me increase my study time by 40% and stay consistent with my goals."</p>
+            <p class="mt-2 text-xs font-medium text-gray-800 dark:text-gray-200">- Sarah K., Computer Science Student</p>
+          </div>
+          
+          <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 border-l-4 border-purple-500">
+            <p class="text-sm text-gray-600 dark:text-gray-400">"The analytics and tracking features have been game-changing for my exam preparation."</p>
+            <p class="mt-2 text-xs font-medium text-gray-800 dark:text-gray-200">- Mark T., Medical Student</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Style form inputs to match site aesthetic */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400;
+  }
+  
+  /* Style checkbox */
+  input[type="checkbox"] {
+    @apply h-4 w-4 text-indigo-600 focus:ring-indigo-500 dark:focus:ring-offset-slate-800 border-gray-300 dark:border-gray-600 rounded;
+  }
+  
+  /* Error styling */
+  .errorlist {
+    @apply mt-1 list-none p-0 text-sm text-red-600 dark:text-red-400;
+  }
+</style>
 {% endblock %}
