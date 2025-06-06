@@ -4,7 +4,7 @@ from django.conf import settings
 
 # Initialize Groq client with API key from environment
 try:
-    client = groq.Groq(api_key=os.environ.get('GROQ_API_KEY', ''))
+    client = groq.Groq(api_key=os.environ.get('GROQ_API_KEY'))
 except Exception as e:
     print(f"Error initializing Groq client: {e}")
     client = None

@@ -1,197 +1,277 @@
+# accounts/views.py
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import datetime
-from .forms import SignupForm
-from django.db.models import Count
+from .forms import SignupForm, CustomLoginForm
+from django.db.models import Count, Sum, Avg
+from django.contrib.auth.views import LoginView
+from django.urls import reverse_lazy
 
 def signup(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('home')
+            try:
+                user = form.save()
+                login(request, user)
+                messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
+                return redirect('home')
+            except Exception as e:
+                messages.error(request, 'An error occurred while creating your account. Please try again.')
+                # Log the error for debugging
+                print(f"Signup error: {e}")
+        else:
+            # Form has validation errors - they will be displayed in the template
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = SignupForm()
+    
     return render(request, 'accounts/signup.html', {'form': form})
+
+
+class CustomLoginView(LoginView):
+    form_class = CustomLoginForm
+    template_name = 'registration/login.html'
+    redirect_authenticated_user = True
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Welcome back, {form.get_user().username}!')
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        # Add a general error message for invalid login
+        messages.error(self.request, 'Invalid login credentials. Please check your username and password.')
+        return super().form_invalid(form)
+
+
+# Alternative function-based login view if you prefer
+def custom_login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = CustomLoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.username}!')
+                next_url = request.GET.get('next', 'home')
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Invalid username or password.')
+        else:
+            # Form validation errors will be displayed automatically
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = CustomLoginForm()
+    
+    return render(request, 'registration/login.html', {'form': form})
+
 
 @login_required
 def profile(request):
     user = request.user
-    
+
     # Get study statistics
     from rooms.models import StudySession, Room
-    from django.db.models import Sum, Count, Avg
-    from django.utils import timezone
-    from datetime import timedelta
 
-    total_seconds = user.profile.total_study_time
-    total_minutes = total_seconds // 60
-    hours_studied   = total_minutes // 60
-    minutes_studied = total_minutes % 60
-    
+    # total_study_time is now stored in seconds
+    total_seconds = user.profile.total_study_time or 0
+    hours_studied = total_seconds // 3600
+    minutes_studied = (total_seconds % 3600) // 60
+
     # Get recent study sessions (last 30 days)
     thirty_days_ago = timezone.now() - timedelta(days=30)
     recent_sessions = StudySession.objects.filter(
         user=user,
         start_time__gte=thirty_days_ago
-    ).order_by('-start_time')
-    
+    ).order_by('-start_time')[:10]
+
     # Get most active rooms
     room_stats = StudySession.objects.filter(user=user).values(
-        'room__name', 'room__id', 'room__category'
+        'user__username', 'room__name', 'room__id', 'room__category'
     ).annotate(
-        total_time=Sum('duration'),
+        total_time_seconds=Sum('duration'),
         session_count=Count('id')
-    ).order_by('-total_time')[:5]
-    
+    ).order_by('-total_time_seconds')[:5]
+
+    # Convert room stats total time to hours/minutes for display
+    for stat in room_stats:
+        total_seconds_stat = stat['total_time_seconds'] or 0
+        stat['hours'] = total_seconds_stat // 3600
+        stat['minutes'] = (total_seconds_stat % 3600) // 60
+
     # Daily study time for the past 7 days
     seven_days_ago = timezone.now() - timedelta(days=7)
     daily_stats = []
     daily_session_counts = []
 
-    
     for i in range(7):
         day = seven_days_ago + timedelta(days=i)
-        # day_name = day.strftime('%A')
         day_start = timezone.make_aware(timezone.datetime(day.year, day.month, day.day))
         day_end = day_start + timedelta(days=1)
 
-        sessions_on_day = StudySession.objects.filter(
+        day_total_seconds = StudySession.objects.filter(
             user=user,
             start_time__gte=day_start,
             start_time__lt=day_end
-        ).count()
+        ).aggregate(total=Sum('duration'))['total'] or 0
 
-        day_sessions = StudySession.objects.filter(
-            user=user,
-            start_time__gte=day_start,
-            start_time__lt=day_end
-        )
-        day_name = day.strftime('%A')
-        day_total = day_sessions.aggregate(total=Sum('duration'))['total'] or 0
+        sessions_on_day_count = StudySession.objects.filter(
+             user=user,
+             start_time__gte=day_start,
+             start_time__lt=day_end
+         ).count()
+
         daily_stats.append({
-            'day': day_name,
-            'minutes': day_total
+            'day': day.strftime('%A'),
+            'minutes': day_total_seconds // 60
         })
-        daily_session_counts.append(sessions_on_day)
+        daily_session_counts.append(sessions_on_day_count)
 
-    
     # Average study time per session
-    avg_session_time = StudySession.objects.filter(
+    avg_session_time_seconds = StudySession.objects.filter(
         user=user,
         duration__gt=0
     ).aggregate(avg=Avg('duration'))['avg'] or 0
-    
+
+    avg_session_time_minutes = round(avg_session_time_seconds / 60, 1)
+
+    # Category study time
     category_data = StudySession.objects.filter(user=user).values(
-        'room__category' # Group by room category
+        'room__category'
     ).annotate(
-        total_duration=Sum('duration') # Sum of duration for each category
-    ).order_by('-total_duration')
+        total_duration_seconds=Sum('duration')
+    ).order_by('-total_duration_seconds')
 
     category_labels = [item['room__category'] for item in category_data if item['room__category']]
-    category_values = [item['total_duration'] for item in category_data if item['room__category']]
+    category_values = [item['total_duration_seconds'] // 60 for item in category_data if item['room__category']]
 
+    # Time of day study time
     time_slots = {
         'Morning': (datetime.time(6, 0), datetime.time(11, 59, 59)),
         'Afternoon': (datetime.time(12, 0), datetime.time(16, 59, 59)),
         'Evening': (datetime.time(17, 0), datetime.time(20, 59, 59)),
         'Night': (datetime.time(21, 0), datetime.time(23, 59, 59)),
-        'Late Night': (datetime.time(0, 0), datetime.time(2, 59, 59)), # Covers past midnight
+        'Late Night': (datetime.time(0, 0), datetime.time(2, 59, 59)),
         'Early Morning': (datetime.time(3, 0), datetime.time(5, 59, 59)),
     }
-    
+
     time_of_day_labels = list(time_slots.keys())
-    time_of_day_values = [0] * len(time_of_day_labels)
-    
+    time_of_day_values_seconds = [0] * len(time_of_day_labels)
+
     user_sessions = StudySession.objects.filter(user=user)
-    
+
     for session in user_sessions:
-        # Ensure start_time is a datetime object and timezone aware if necessary
-        session_time = timezone.localtime(session.start_time).time() # Convert to local time
-        for i, (slot_name, (start_slot, end_slot)) in enumerate(time_slots.items()):
-            if start_slot <= session_time <= end_slot:
-                time_of_day_values[i] += session.duration # Summing duration
-                break
-            # Handle cases spanning midnight if necessary, e.g. Late Night into Early Morning
-            # For simplicity, this example assumes session start time determines the slot.
+        if session.start_time:
+            session_time = timezone.localtime(session.start_time).time()
+            session_duration_seconds = session.duration or 0
+
+            for i, (slot_name, (start_slot, end_slot)) in enumerate(time_slots.items()):
+                 if start_slot <= end_slot:
+                     if start_slot <= session_time <= end_slot:
+                         time_of_day_values_seconds[i] += session_duration_seconds
+                         break
+                 else:
+                     if session_time >= start_slot or session_time <= end_slot:
+                         time_of_day_values_seconds[i] += session_duration_seconds
+                         break
+
+    time_of_day_values_minutes = [s // 60 for s in time_of_day_values_seconds]
+
+    # Study calendar data (last 90 days)
     ninety_days_ago = timezone.now() - timedelta(days=90)
     calendar_sessions = StudySession.objects.filter(
         user=user,
         start_time__gte=ninety_days_ago
     ).values(
-        'start_time__date' # Group by date
+        'start_time__date'
     ).annotate(
-        total_duration_on_day=Sum('duration')
+        total_duration_on_day_seconds=Sum('duration')
     ).order_by('start_time__date')
 
-    # Format for D3 calendar: [{date: "YYYY-MM-DD", value: study_metric}, ...]
-    # 'value' could be number of sessions, total minutes, or a scaled intensity (0-4)
-    # For this example, let's use total minutes and scale it later in JS or just use minutes.
     study_calendar_data = []
-    # Create a dictionary for quick lookup
-    sessions_by_date = {
-        item['start_time__date'].isoformat(): item['total_duration_on_day'] 
+    sessions_by_date_seconds = {
+        item['start_time__date'].isoformat(): item['total_duration_on_day_seconds']
         for item in calendar_sessions
     }
 
-    for i in range(90): # Generate entries for all days in the last 90 days
+    for i in range(90):
         day_date = (ninety_days_ago + timedelta(days=i)).date()
-        duration = sessions_by_date.get(day_date.isoformat(), 0) # Get duration or 0 if no session
-        
-        # Simple scaling for the 0-4 value example the D3 chart expects
-        # You might want a more sophisticated scaling
+        duration_seconds = sessions_by_date_seconds.get(day_date.isoformat(), 0)
+
         scaled_value = 0
-        if duration > 120: # Over 2 hours
+        if duration_seconds > 120 * 60:
             scaled_value = 4
-        elif duration > 60: # Over 1 hour
+        elif duration_seconds > 60 * 60:
             scaled_value = 3
-        elif duration > 30: # Over 30 mins
+        elif duration_seconds > 30 * 60:
             scaled_value = 2
-        elif duration > 0: # Any study
+        elif duration_seconds > 0:
             scaled_value = 1
-            
+
         study_calendar_data.append({
             "date": day_date.isoformat(),
-            "value": scaled_value # Or pass raw duration and handle scaling in JS
+            "value": scaled_value
         })
 
     context = {
         'user': user,
         'hours_studied': hours_studied,
         'minutes_studied': minutes_studied,
-        'recent_sessions': recent_sessions[:10],  # Last 10 sessions
+        'recent_sessions': recent_sessions,
         'room_stats': room_stats,
         'daily_stats': daily_stats,
         'daily_session_counts': daily_session_counts,
-        'avg_session_time': round(avg_session_time, 1),
+        'avg_session_time': avg_session_time_minutes,
         'category_labels': category_labels,
         'category_values': category_values,
         'time_of_day_labels': time_of_day_labels,
-        'time_of_day_values': time_of_day_values,
+        'time_of_day_values': time_of_day_values_minutes,
         'study_calendar_data': study_calendar_data,
     }
-    
+
     return render(request, 'accounts/profile.html', context)
+
 
 @login_required
 def update_streak(request):
     user = request.user
     today = timezone.now().date()
-    
-    if user.profile.last_login_date:
+
+    last_login_date = user.profile.last_login_date
+    if isinstance(last_login_date, datetime.datetime):
+        last_login_date = last_login_date.date()
+
+    last_study_session = user.studysession_set.order_by('-start_time').first()
+    last_study_date = last_study_session.start_time.date() if last_study_session and last_study_session.start_time else None
+
+    is_consecutive_day = False
+    if last_study_date:
         yesterday = today - timedelta(days=1)
-        if user.profile.last_login_date == yesterday:
-            user.profile.streak += 1
-        elif user.profile.last_login_date != today:
-            user.profile.streak = 1
-    else:
-        user.profile.streak = 1
-        
-    user.profile.last_login_date = today
-    user.profile.save()
-    
+        if last_study_date == yesterday:
+            is_consecutive_day = True
+        elif last_study_date == today:
+             pass
+        else:
+            if StudySession.objects.filter(user=user, start_time__date=today).exists():
+                 user.profile.streak = 1
+                 user.profile.save()
+                 return redirect('profile')
+
+    if is_consecutive_day or (last_study_date is None and StudySession.objects.filter(user=user, start_time__date=today).exists()):
+         user.profile.streak = (user.profile.streak or 0) + 1
+         user.profile.save()
+
     return redirect('profile')

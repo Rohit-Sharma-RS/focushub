@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
+{% load static %} {# Load the static files template tag #}
 
 {% block title %}{{ room.name }}{% endblock %}
 
 {% block extra_head %}
 {# Custom styles moved to Tailwind classes or are minor enough not to need a separate block #}
 <style>
-    /* For custom scrollbar, if desired over Tailwind's default */
     #chat-messages::-webkit-scrollbar {
         width: 8px;
     }
@@ -21,12 +21,66 @@
     .dark #chat-messages::-webkit-scrollbar-thumb {
         background-color: rgba(100, 116, 139, 0.7); /* slate-500 with opacity */
     }
+    /* Animation for the clear effect */
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    .ai-response-fade {
+        animation: fadeOut 0.5s forwards;
+    }
+
+    /* Collapsible Section Styles */
+    .collapsible-header {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        /* Add some padding or margin if needed */
+        /* padding: 1rem; */
+        /* background-color: #f7fafc; /* Example light background */
+    }
+
+    .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease-in-out; /* Smooth transition */
+    }
+
+    .collapsible-content.expanded {
+        max-height: 1000px; /* Sufficiently large value to show content */
+        /* Adjust based on typical content height, or use a very large value */
+    }
+
+    /* Style for the scrollable AI response area */
+    .ai-response-scrollable {
+        max-height: 300px; /* Set a maximum height */
+        overflow-y: auto; /* Enable vertical scrolling */
+        padding-right: 10px; /* Add padding to avoid scrollbar overlapping content */
+    }
+
+     /* Custom scrollbar for AI response area */
+    .ai-response-scrollable::-webkit-scrollbar {
+        width: 8px;
+    }
+    .ai-response-scrollable::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .ai-response-scrollable::-webkit-scrollbar-thumb {
+        background-color: rgba(128, 128, 128, 0.5);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    .dark .ai-response-scrollable::-webkit-scrollbar-thumb {
+        background-color: rgba(100, 116, 139, 0.7); /* slate-500 with opacity */
+    }
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="space-y-8">
-    <!-- Room Header -->
     <div class="pb-6 border-b border-gray-200 dark:border-slate-700">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <h2 class="text-3xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400 mb-2 sm:mb-0">{{ room.name }}</h2>
@@ -39,11 +93,8 @@
         <p class="text-sm text-gray-500 dark:text-gray-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-gray-400 dark:text-slate-500"></i> Category: <span class="font-medium">{{ room.category }}</span></p>
     </div>
 
-    <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <!-- Left Column (Chat & Timer) -->
         <div class="lg:col-span-2 space-y-6 lg:space-y-8">
-            <!-- Pomodoro Timer -->
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-1 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-stopwatch text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Pomodoro Timer
@@ -54,16 +105,16 @@
                     <p id="pomodoro-status" class="text-sm text-gray-500 dark:text-gray-400 mt-1 h-5">Ready to focus</p>
                 </div>
                 <div class="pomodoro-controls grid grid-cols-2 sm:grid-cols-4 gap-3 items-center mb-4">
-                    <button id="start-timer" class="w-full col-span-1 sm:col-span-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                    <button id="start-timer" class="w-full col-span-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
                         <i class="fa-solid fa-play mr-1.5"></i>Start
                     </button>
-                    <button id="pause-timer" class="w-full col-span-1 sm:col-span-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <button id="pause-timer" class="w-full col-span-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                         <i class="fa-solid fa-pause mr-1.5"></i>Pause
                     </button>
-                    <button id="reset-timer" class="w-full col-span-1 sm:col-span-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                    <button id="reset-timer" class="w-full col-span-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
                         <i class="fa-solid fa-rotate-right mr-1.5"></i>Reset
                     </button>
-                    <select id="pomodoro-mode" class="col-span-2 sm:col-span-1 w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 appearance-none bg-no-repeat bg-right-3 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236B7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] dark:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23D1D5DB%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]"
+                    <select id="pomodoro-mode" class="w-full col-span-2 sm:col-span-1 px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 appearance-none bg-no-repeat bg-right-3 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236B7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] dark:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23D1D5DB%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]"
                             style="background-size: 1.25em;">
                         <option value="pomodoro">Focus (25 min)</option>
                         <option value="short-break">Short Break (5 min)</option>
@@ -75,21 +126,30 @@
                 </div>
             </div>
 
-            <!-- Lo-fi Player -->
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-headphones-simple text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Background Music
                 </h3>
-                <audio id="background-music" controls loop class="w-full accent-indigo-500">
-                    <source src="https://cdn.freesound.org/previews/531/531547_11404599-lq.mp3" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                </audio>
-                <audio id="timer-complete-sound" class="hidden"> <!-- Hidden, controlled by JS -->
-                    <source src="https://cdn.freesound.org/previews/536/536096_11836187-lq.mp3" type="audio/mpeg">
+                <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                    <audio id="background-music" controls loop class="w-full sm:w-auto flex-grow accent-indigo-500 min-w-0">
+                        <source src="{% static 'music/rainy-lofi.mp3' %}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <select id="lofi-track-select" class="w-full sm:w-auto px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 appearance-none bg-no-repeat bg-right-3 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236B7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] dark:bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%23D1D5DB%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M10%2012.586l-4.293-4.293a1%201%200%201%200-1.414%201.414l5%205a1%201%200%200%200%201.414%200l5-5a1%201%200%200%200-1.414-1.414L10%2012.586z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')]"
+                            style="background-size: 1.25em; min-width: 150px;">
+                        {# Options will be dynamically added or listed here #}
+                        <option value="{% static 'music/rainy-lofi.mp3' %}">Rain</option>
+                        {# Add more options for your tracks here #}
+                        <option value="{% static 'music/coffee.mp3' %}">Coffee</option>
+                        <option value="{% static 'music/quiet-night.mp3' %}">Quiet Night</option>
+                        <option value="{% static 'music/wind-down.mp3' %}">Relax</option>
+                        {# ... add as many as you need ... #}
+                    </select>
+                </div>
+                <audio id="timer-complete-sound" class="hidden"> <source src="https://cdn.freesound.org/previews/536/536096_11836187-lq.mp3" type="audio/mpeg">
                 </audio>
             </div>
 
-            <!-- Chat -->
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-comments text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Live Chat
@@ -100,7 +160,7 @@
                         <div class="message flex {% if message_item.user == request.user %}justify-end{% endif %}">
                             <div class="max-w-[80%] sm:max-w-[70%] p-3 rounded-xl {% if message_item.user == request.user %}bg-indigo-500 text-white shadow{% else %}bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-100 shadow{% endif %}">
                                 {% if message_item.user != request.user %}
-                                <span class="message-user block text-xs font-semibold mb-1 {% if message_item.user == request.user %}text-indigo-100{% else %}text-indigo-600 dark:text-indigo-400{% endif %}">{{ message_item.user.username }}</span>
+                                <span class="message-user block text-xs font-semibold mb-1 {% if message_item.user == request.user %}text-indigo-600 dark:text-indigo-400{% else %}text-indigo-100{% endif %}">{{ message_item.user.username }}</span>
                                 {% endif %}
                                 <span class="message-content text-sm break-words">{{ message_item.content }}</span>
                             </div>
@@ -119,9 +179,7 @@
             </div>
         </div>
 
-        <!-- Right Column (Summary, Leaderboard, Recommended) -->
         <div class="lg:col-span-1 space-y-6 lg:space-y-8">
-            <!-- AI Summary -->
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-microchip text-indigo-500 dark:text-indigo-400 mr-2.5"></i> AI Discussion Tools
@@ -129,6 +187,7 @@
                 <button id="summarize-button" class="w-full mb-4 py-2.5 px-4 bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Summarize Discussion
                 </button>
+
                 <div id="summary-container" style="display: none;" class="mt-4 p-4 bg-gray-50 dark:bg-slate-700/60 rounded-lg border border-gray-200 dark:border-slate-600">
                     <div id="summary-content" class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"></div>
                     <div id="summary-qa" style="display: none;" class="mt-5 pt-4 border-t border-gray-300 dark:border-slate-600">
@@ -143,7 +202,77 @@
                 </div>
             </div>
 
-            <!-- Leaderboard -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
+                {# Collapsible Header #}
+                <div id="doubt-header" class="collapsible-header">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                        <i class="fa-solid fa-question-circle text-indigo-500 dark:text-indigo-400 mr-2.5"></i> Clear Your Doubts
+                    </h3>
+                    {# Arrow icon for collapse/expand #}
+                    <i id="doubt-arrow" class="fa-solid fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-300"></i>
+                </div>
+
+                {# Collapsible Content Wrapper #}
+                <div id="doubt-content-wrapper" class="collapsible-content mt-4"> {# Added mt-4 for spacing below header #}
+
+                    <div class="mb-4">
+                        <label for="doubt-text-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type your doubt:</label>
+                        <textarea id="doubt-text-input" rows="3"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                                placeholder="Enter your question or doubt here..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="doubt-image-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload an image (optional):</label>
+                        <input type="file" id="doubt-image-input" accept="image/*"
+                            class="w-full text-sm text-gray-500 dark:text-gray-400
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-lg file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-indigo-50 dark:file:bg-slate-700
+                                    file:text-indigo-700 dark:file:text-indigo-300
+                                    hover:file:bg-indigo-100 dark:hover:file:bg-slate-600
+                                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <img id="doubt-image-preview" src="#" alt="Image preview" class="mt-2 rounded-lg max-h-40 hidden"/>
+                    </div>
+
+                    <div class="flex space-x-2 mb-4">
+                        <button id="clear-doubts-submit-btn"
+                                class="flex-grow py-2.5 px-4 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                            <i class="fa-solid fa-paper-plane mr-2"></i> Get Clarification
+                        </button>
+
+                        <button id="toggle-audio-response"
+                                class="py-2.5 px-3 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                            <i class="fa-solid fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    {# AI Response Container - Now with scrollable content area #}
+                    <div id="doubt-response-container" style="display: none;" class="mt-4 p-4 bg-gray-50 dark:bg-slate-700/60 rounded-lg border border-gray-200 dark:border-slate-600">
+                        <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">AI Response:</h4>
+                        {# Added ai-response-scrollable class here #}
+                        <div id="doubt-response-content" class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 ai-response-scrollable">
+                        </div>
+                        <div id="doubt-audio-player" class="mt-3 hidden">
+                            <audio id="doubt-audio" controls class="w-full mt-2">
+                                <source src="" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    </div>
+                </div> {# End Collapsible Content Wrapper #}
+            </div> {# End Clear Your Doubts Section #}
+
+
+            <div class="flex justify-center">
+                <button id="clear-ai-responses-btn"
+                        class="py-2 px-4 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium rounded-lg shadow transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+                    <i class="fa-solid fa-trash-can mr-2"></i> Clear AI Responses
+                </button>
+            </div>
+
+
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-trophy mr-2.5 text-yellow-400 dark:text-yellow-500"></i> Top Focused Users
@@ -159,9 +288,9 @@
                         {{ entry.username }}
                         </span>
                     </div>
+                    {# Display hours and minutes from the context #}
                     <span class="text-sm text-indigo-600 dark:text-indigo-400 font-semibold">
-                        {{ entry.hours }} hour {% if entry.hours != 1 %}s{% endif %}   
-                        {{ entry.minutes }} minute{% if entry.minutes != 1 %}s{% endif %}
+                        {{ entry.hours }} hour{% if entry.hours != 1 %}s{% endif %} {{ entry.minutes }} minute{% if entry.minutes != 1 %}s{% endif %}
                     </span>
                     </div>
                 {% endfor %}
@@ -169,7 +298,6 @@
 
             </div>
 
-            <!-- Recommended Rooms -->
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl glass">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                     <i class="fa-solid fa-compass mr-2.5 text-sky-500 dark:text-sky-400"></i> Recommended Rooms
@@ -195,11 +323,14 @@
         </div>
     </div>
 
+    {# Load marked.js for Markdown rendering #}
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script>
         const roomId = '{{ room.id }}';
         // const currentUserId = '{{ request.user.id }}'; // Use if backend sends user_id with messages
         const currentUsername = '{{ request.user.username }}';
-        
+
         const chatMessagesContainer = document.getElementById('chat-messages');
 
         function appendMessageToChat(msgUsername, messageContent, isCurrentUser, motivationalMsg) {
@@ -222,7 +353,7 @@
             contentSpan.classList.add('message-content', 'text-sm', 'break-words', 'leading-relaxed');
             contentSpan.textContent = messageContent;
             messageBubble.appendChild(contentSpan);
-            
+
             messageWrapper.appendChild(messageBubble);
             chatMessagesContainer.appendChild(messageWrapper);
 
@@ -232,17 +363,17 @@
                 motivationalElement.innerHTML = `<i class="fa-solid fa-lightbulb mr-2 opacity-80"></i> ${motivationalMsg}`;
                 chatMessagesContainer.appendChild(motivationalElement);
             }
-            
+
             chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
         }
 
         // WebSocket setup
         const chatSocket = new WebSocket(
-            (window.location.protocol === "https:" ? "wss://" : "ws://") 
-            + window.location.host 
+            (window.location.protocol === "https:" ? "wss://" : "ws://")
+            + window.location.host
             + '/ws/rooms/' + roomId + '/'
         );
-        
+
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             // Assuming backend sends: data.message, data.username, data.motivational_message
@@ -250,7 +381,7 @@
             const isCurrentUser = (data.username === currentUsername);
             appendMessageToChat(data.username, data.message, isCurrentUser, data.motivational_message);
         };
-        
+
         chatSocket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly', e);
             const errorElement = document.createElement('div');
@@ -263,42 +394,43 @@
         chatSocket.onerror = function(err) {
             console.error('WebSocket Error: ', err);
         };
-        
+
         document.querySelector('#chat-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const messageInput = document.querySelector('#chat-message-input');
             const message = messageInput.value.trim();
-            
+
             if (message === '' || chatSocket.readyState !== WebSocket.OPEN) {
                 if (chatSocket.readyState !== WebSocket.OPEN) {
                     console.warn("WebSocket not open. Message not sent.");
                 }
                 return;
             }
-            
+
             chatSocket.send(JSON.stringify({
                 'message': message,
                 'username': currentUsername // Backend should verify/use authenticated user
             }));
-            
+
             messageInput.value = '';
             messageInput.focus();
         });
-        
+
         // Pomodoro Timer Logic
         let timerInterval;
         let secondsRemaining; // Initialized by switchMode
         let timerRunning = false;
         let pomodoroCount = 0;
-        let totalFocusSecondsAccumulated = 0; // Accumulates focus time for current session/mode
+        let totalFocusSecondsAccumulated = 0; // Accumulates focus time since last server update
         let currentMode = 'pomodoro';
+        let periodicUpdateInterval; // Interval for sending periodic updates
 
         const pomodoroSettings = {
             'pomodoro': 25 * 60,
             'short-break': 5 * 60,
             'long-break': 15 * 60
         };
-        
+
         const timerDisplayEl = document.getElementById('timer-display');
         const startTimerBtnEl = document.getElementById('start-timer');
         const pauseTimerBtnEl = document.getElementById('pause-timer');
@@ -317,11 +449,16 @@
         function updateTimerDisplayUI() {
             timerDisplayEl.textContent = formatTime(secondsRemaining);
         }
-        
-        function updateServerFocusTime(durationInSeconds) {
-            if (durationInSeconds <= 0) return;
 
-            console.log(`Updating server with ${durationInSeconds} seconds of focus time.`);
+        // Function to send accumulated focus time to the server
+        function sendFocusTimeToServer() {
+            if (totalFocusSecondsAccumulated <= 0 || currentMode !== 'pomodoro') {
+                 // Only send if there's accumulated time and we are in pomodoro mode
+                 totalFocusSecondsAccumulated = 0; // Reset even if not sending
+                 return;
+            }
+
+            console.log(`Sending ${totalFocusSecondsAccumulated} seconds of focus time to server.`);
             fetch('{% url "update_timer" %}', { // Ensure this URL is correctly defined in Django
                 method: 'POST',
                 headers: {
@@ -329,66 +466,76 @@
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 },
                 body: JSON.stringify({
-                    'duration_seconds': durationInSeconds,
+                    'duration_seconds': totalFocusSecondsAccumulated, // Send accumulated seconds
                     'room_id': roomId
                 })
             }).then(response => {
-                if (!response.ok) console.error("Failed to update timer on server. Status: " + response.status);
-                else console.log("Focus time successfully updated on server.");
-            }).catch(error => console.error("Error updating timer on server:", error));
+                if (!response.ok) {
+                    console.error("Failed to update timer on server. Status: " + response.status);
+                    // Potentially retry or show error to user
+                } else {
+                    console.log("Focus time successfully updated on server.");
+                    // Reset accumulated time after successful send
+                    totalFocusSecondsAccumulated = 0;
+                }
+            }).catch(error => {
+                console.error("Error updating timer on server:", error);
+                // Potentially retry or show error to user
+            });
         }
-        
-        function switchMode(newMode, sendFocusUpdate = true) {
-            if (timerRunning && currentMode === 'pomodoro' && sendFocusUpdate) { // If switching while timer was running
-                updateServerFocusTime(totalFocusSecondsAccumulated);
+
+
+        function switchMode(newMode) {
+            // Send any accumulated time before switching modes if in pomodoro
+            if (timerRunning && currentMode === 'pomodoro') {
+                 sendFocusTimeToServer();
             }
-            totalFocusSecondsAccumulated = 0; // Reset for the new mode
 
             currentMode = newMode;
             secondsRemaining = pomodoroSettings[newMode];
             pomodoroModeSelectEl.value = newMode;
-        
+
             const statusText = {
-                'pomodoro': 'Focus time! Let\'s go!',
-                'short-break': 'Time for a short break.',
-                'long-break': 'Take a well-deserved long break.'
+                'pomodoro': 'Ready to focus',
+                'short-break': 'Ready for short break',
+                'long-break': 'Ready for long break'
             };
             pomodoroStatusEl.textContent = statusText[newMode] || 'Ready';
-        
+
             updateTimerDisplayUI();
             timerRunning = false;
             if(timerInterval) clearInterval(timerInterval);
+            if(periodicUpdateInterval) clearInterval(periodicUpdateInterval); // Clear periodic update interval
 
             startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Start';
             startTimerBtnEl.disabled = false;
             startTimerBtnEl.classList.remove('bg-orange-500', 'hover:bg-orange-600', 'bg-gray-500', 'cursor-not-allowed');
             startTimerBtnEl.classList.add('bg-green-500', 'hover:bg-green-600');
-            
+
             pauseTimerBtnEl.innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i>Pause';
             pauseTimerBtnEl.disabled = true;
         }
-        
+
         function handleTimerCompletion() {
             timerCompleteSoundEl.play().catch(e => console.warn("Audio play failed:", e)); // Autoplay policy might block
-        
+
             if (Notification.permission === 'granted') {
                 new Notification('FocusHub Timer Complete!', {
                     body: currentMode === 'pomodoro' ? 'Great focus session! Time for a break.' : 'Break over! Time to get back to focus.',
                     icon: "{% url 'home' %}favicon.ico" // Adjust if you have a static favicon URL setup
                 });
             }
-        
+
             if (currentMode === 'pomodoro') {
-                updateServerFocusTime(totalFocusSecondsAccumulated); // Update for the completed pomodoro
-                totalFocusSecondsAccumulated = 0; 
+                sendFocusTimeToServer(); // Send final accumulated time for this pomodoro
                 pomodoroCount++;
                 pomodoroCountDisplayEl.textContent = `Pomodoros: ${pomodoroCount}`;
-                switchMode(pomodoroCount % 4 === 0 ? 'long-break' : 'short-break', false);
+                switchMode(pomodoroCount % 4 === 0 ? 'long-break' : 'short-break');
             } else { // Break finished
-                switchMode('pomodoro', false);
+                switchMode('pomodoro');
             }
         }
-        
+
         startTimerBtnEl.addEventListener('click', function () {
             if (timerRunning) return; // Already running
 
@@ -398,20 +545,21 @@
                     else console.log("Notification permission denied or dismissed.");
                 });
             }
-    
+
             timerRunning = true;
             this.innerHTML = '<i class="fa-solid fa-hourglass-half mr-1.5"></i>Running...';
             this.disabled = true;
             this.classList.remove('bg-green-500', 'hover:bg-green-600', 'bg-orange-500', 'hover:bg-orange-600');
             this.classList.add('bg-gray-500', 'cursor-not-allowed');
-            
+
             pauseTimerBtnEl.disabled = false;
             pomodoroStatusEl.textContent = currentMode === 'pomodoro' ? 'Focusing...' : 'On a break...';
 
+            // Start the main timer interval
             timerInterval = setInterval(function () {
                 secondsRemaining--;
                 if (currentMode === 'pomodoro') {
-                    totalFocusSecondsAccumulated++;
+                    totalFocusSecondsAccumulated++; // Accumulate seconds only in pomodoro mode
                 }
                 updateTimerDisplayUI();
 
@@ -420,14 +568,28 @@
                     handleTimerCompletion();
                 }
             }, 1000);
+
+            // Start periodic update interval for sending focus time
+            // Send accumulated time every 60 seconds (1 minute) if in pomodoro mode
+            periodicUpdateInterval = setInterval(function() {
+                if (timerRunning && currentMode === 'pomodoro') {
+                    sendFocusTimeToServer();
+                }
+            }, 60 * 1000); // Every 60 seconds
         });
-        
+
         pauseTimerBtnEl.addEventListener('click', function () {
             if (!timerRunning) return; // Not running, nothing to pause
 
             timerRunning = false;
             clearInterval(timerInterval);
-            
+            if(periodicUpdateInterval) clearInterval(periodicUpdateInterval); // Clear periodic update interval
+
+            // Send any accumulated time on pause if in pomodoro mode
+            if (currentMode === 'pomodoro') {
+                 sendFocusTimeToServer();
+            }
+
             startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Resume';
             startTimerBtnEl.disabled = false;
             startTimerBtnEl.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-green-500', 'hover:bg-green-600');
@@ -436,31 +598,27 @@
             this.innerHTML = '<i class="fa-solid fa-circle-pause mr-1.5"></i>Paused';
             this.disabled = true;
             pomodoroStatusEl.textContent = 'Timer Paused';
-    
-            if (currentMode === 'pomodoro') {
-                // Focus time is already accumulated in totalFocusSecondsAccumulated per second
-                // Optionally send an update here if you want partial updates on pause
-                // updateServerFocusTime(totalFocusSecondsAccumulated); 
-                // However, it's better to send full pomodoro or on reset/switch.
-            }
         });
-        
+
         resetTimerBtnEl.addEventListener('click', function () {
+            // Send any accumulated time on reset if in pomodoro mode
             if (currentMode === 'pomodoro' && totalFocusSecondsAccumulated > 0) {
-                 updateServerFocusTime(totalFocusSecondsAccumulated); // Save any accumulated focus time
+                 sendFocusTimeToServer(); // Save any accumulated focus time
             }
-            totalFocusSecondsAccumulated = 0; 
-            
+
             timerRunning = false;
             clearInterval(timerInterval);
-            secondsRemaining = pomodoroSettings[currentMode]; 
+            if(periodicUpdateInterval) clearInterval(periodicUpdateInterval); // Clear periodic update interval
+            totalFocusSecondsAccumulated = 0; // Reset accumulated time
+
+            secondsRemaining = pomodoroSettings[currentMode];
             updateTimerDisplayUI();
 
             startTimerBtnEl.innerHTML = '<i class="fa-solid fa-play mr-1.5"></i>Start';
             startTimerBtnEl.disabled = false;
             startTimerBtnEl.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-orange-500', 'hover:bg-orange-600');
             startTimerBtnEl.classList.add('bg-green-500', 'hover:bg-green-600');
-            
+
             pauseTimerBtnEl.innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i>Pause';
             pauseTimerBtnEl.disabled = true;
 
@@ -471,96 +629,325 @@
             };
             pomodoroStatusEl.textContent = statusText[currentMode];
         });
-        
+
         pomodoroModeSelectEl.addEventListener('change', function () {
-            switchMode(this.value, true);
+            switchMode(this.value); // switchMode now handles sending time before switching
         });
-        
+
         // Initial Pomodoro Setup
-        switchMode(currentMode, false); // Initialize timer display and mode without sending update
+        switchMode(currentMode); // Initialize timer display and mode
 
-        // Summarize functionality
-        const summarizeButtonEl = document.getElementById('summarize-button');
-        const summaryContainerEl = document.getElementById('summary-container');
-        const summaryContentEl = document.getElementById('summary-content');
-        const summaryQAEl = document.getElementById('summary-qa');
-        const askQuestionBtnEl = document.getElementById('ask-question-btn');
-        const summaryQuestionInputEl = document.getElementById('summary-question');
-        const answerContainerEl = document.getElementById('answer-container');
+        // Ensure time is sent if user navigates away while timer is running
+        window.addEventListener('beforeunload', function() {
+            if (timerRunning && currentMode === 'pomodoro' && totalFocusSecondsAccumulated > 0) {
+                 // Use synchronous fetch or sendBeacon for best chance of sending data
+                 // Note: sendBeacon is preferred for unload events
+                 navigator.sendBeacon('{% url "update_timer" %}', JSON.stringify({
+                    'duration_seconds': totalFocusSecondsAccumulated,
+                    'room_id': roomId
+                 }));
+                 console.log("Sending final accumulated time via sendBeacon.");
+            }
+        });
 
-        summarizeButtonEl.addEventListener('click', function() {
-            this.disabled = true;
-            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generating...';
-            summaryContentEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating summary with AI...</p>';
-            summaryContainerEl.style.display = 'block';
-            summaryQAEl.style.display = 'none';
-            answerContainerEl.innerHTML = '';
-            
-            fetch(`/rooms/${roomId}/summarize/`)
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const roomId = "{{ room.id }}"; // Assuming room id is passed through template context
+
+            // Audio response preference
+            let audioResponseEnabled = false;
+            const toggleAudioResponseBtn = document.getElementById('toggle-audio-response');
+
+            toggleAudioResponseBtn.addEventListener('click', function() {
+                audioResponseEnabled = !audioResponseEnabled;
+                this.innerHTML = audioResponseEnabled ?
+                    '<i class="fa-solid fa-volume-up"></i>' :
+                    '<i class="fa-solid fa-volume-mute"></i>';
+
+                // Save preference to localStorage
+                localStorage.setItem('audioResponseEnabled', audioResponseEnabled);
+            });
+
+            // Load audio preference from localStorage
+            if(localStorage.getItem('audioResponseEnabled') === 'true') {
+                audioResponseEnabled = true;
+                toggleAudioResponseBtn.innerHTML = '<i class="fa-solid fa-volume-up"></i>';
+            } else {
+                toggleAudioResponseBtn.innerHTML = '<i class="fa-solid fa-volume-mute"></i>';
+            }
+
+            // Summarize functionality
+            const summarizeButtonEl = document.getElementById('summarize-button');
+            const summaryContainerEl = document.getElementById('summary-container');
+            const summaryContentEl = document.getElementById('summary-content');
+            const summaryQAEl = document.getElementById('summary-qa');
+            const askQuestionBtnEl = document.getElementById('ask-question-btn');
+            const summaryQuestionInputEl = document.getElementById('summary-question');
+            const answerContainerEl = document.getElementById('answer-container');
+
+            summarizeButtonEl.addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generating...';
+                summaryContentEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Generating summary with AI...</p>';
+                summaryContainerEl.style.display = 'block';
+                summaryQAEl.style.display = 'none';
+                answerContainerEl.innerHTML = '';
+
+                fetch(`/rooms/${roomId}/summarize/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.error) {
+                            summaryContentEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
+                        } else {
+                            // Render summary as Markdown
+                            summaryContentEl.innerHTML = marked.parse(data.summary || '');
+                            summaryQAEl.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching summary:', error);
+                        summaryContentEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error generating summary. Please try again.</p>';
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Summarize Discussion';
+                    });
+            });
+
+            askQuestionBtnEl.addEventListener('click', function() {
+                const question = summaryQuestionInputEl.value.trim();
+                if (!question) return;
+
+                this.disabled = true;
+                const originalButtonText = this.textContent;
+                this.textContent = 'Asking...';
+
+                answerContainerEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Thinking about your question...</p>';
+
+                fetch(`/rooms/${roomId}/ask/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ question: question })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            answerContainerEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
+                        } else {
+                            // Render answer as Markdown
+                             answerContainerEl.innerHTML = `
+                                <p class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Q: ${question}</p>
+                                ${marked.parse(data.answer || '')}`; // Render answer as Markdown
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error asking question:', error);
+                        answerContainerEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error processing your question. Please try again.</p>';
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.textContent = originalButtonText;
+                    });
+
+                summaryQuestionInputEl.value = '';
+            });
+
+            summaryQuestionInputEl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for newlines if textarea
+                    e.preventDefault(); // Prevent form submission if it's part of a form
+                    askQuestionBtnEl.click();
+                }
+            });
+
+            // Doubt Clearing functionality
+            const doubtHeaderEl = document.getElementById('doubt-header');
+            const doubtContentWrapperEl = document.getElementById('doubt-content-wrapper');
+            const doubtArrowEl = document.getElementById('doubt-arrow');
+            const doubtTextInputEl = document.getElementById('doubt-text-input');
+            const doubtImageInputEl = document.getElementById('doubt-image-input');
+            const doubtImagePreviewEl = document.getElementById('doubt-image-preview');
+            const clearDoubtsSubmitBtnEl = document.getElementById('clear-doubts-submit-btn');
+            const doubtResponseContainerEl = document.getElementById('doubt-response-container');
+            const doubtResponseContentEl = document.getElementById('doubt-response-content'); // This is the scrollable area
+            const doubtAudioPlayerEl = document.getElementById('doubt-audio-player');
+            const doubtAudioEl = document.getElementById('doubt-audio');
+
+            let doubtImageData = null;
+
+            // Image preview
+            doubtImageInputEl.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        doubtImagePreviewEl.src = e.target.result;
+                        doubtImagePreviewEl.classList.remove('hidden');
+                        doubtImageData = file; // Store file object for submission
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    doubtImagePreviewEl.src = '#';
+                    doubtImagePreviewEl.classList.add('hidden');
+                    doubtImageData = null;
+                }
+            });
+
+            clearDoubtsSubmitBtnEl.addEventListener('click', function() {
+                const textDoubt = doubtTextInputEl.value.trim();
+
+                if (!textDoubt && !doubtImageData) {
+                    alert('Please provide a text or image input for your doubt.');
+                    return;
+                }
+
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...';
+                doubtResponseContainerEl.style.display = 'block';
+                // Clear previous content and show loading indicator in the scrollable area
+                doubtResponseContentEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Getting clarification from AI...</p>';
+                doubtAudioPlayerEl.classList.add('hidden');
+
+                const formData = new FormData();
+                if (textDoubt) {
+                    formData.append('text_doubt', textDoubt);
+                }
+                if (doubtImageData) {
+                    formData.append('image_doubt', doubtImageData); // Send the file object
+                }
+
+                // Add response format preference based on toggle state
+                formData.append('response_format', audioResponseEnabled ? 'both' : 'text');
+
+                // CSRF token for Django
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/rooms/${roomId}/clear_doubts/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                })
                 .then(response => response.json())
                 .then(data => {
                     if(data.error) {
-                        summaryContentEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
+                        doubtResponseContentEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
                     } else {
-                        summaryContentEl.innerHTML = `<p>${data.summary.replace(/\n/g, '<br>')}</p>`; // Basic formatting
-                        summaryQAEl.style.display = 'block';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching summary:', error);
-                    summaryContentEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error generating summary. Please try again.</p>';
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Summarize Discussion';
-                });
-        });
-        
-        askQuestionBtnEl.addEventListener('click', function() {
-            const question = summaryQuestionInputEl.value.trim();
-            if (!question) return;
+                        // Render clarification as Markdown in the scrollable area
+                        doubtResponseContentEl.innerHTML = marked.parse(data.clarification || '');
 
-            this.disabled = true;
-            const originalButtonText = this.textContent;
-            this.textContent = 'Asking...';
-            
-            answerContainerEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 flex items-center"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Thinking about your question...</p>';
-            
-            fetch(`/rooms/${roomId}/ask/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ question: question })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        answerContainerEl.innerHTML = `<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${data.error}</p>`;
-                    } else {
-                        answerContainerEl.innerHTML = `
-                            <p class="font-semibold text-gray-800 dark:text-gray-200 mb-1">Q: ${question}</p>
-                            <p>${data.answer.replace(/\n/g, '<br>')}</p>`;
+                        // Handle audio response if available
+                        if (data.audio_url && audioResponseEnabled) {
+                            doubtAudioEl.src = data.audio_url;
+                            doubtAudioPlayerEl.classList.remove('hidden');
+                            doubtAudioEl.play();
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Error asking question:', error);
-                    answerContainerEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error processing your question. Please try again.</p>';
+                    console.error('Error clearing doubt:', error);
+                    doubtResponseContentEl.innerHTML = '<p class="text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Error processing your request. Please try again.</p>';
                 })
                 .finally(() => {
                     this.disabled = false;
-                    this.textContent = originalButtonText;
+                    this.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Get Clarification';
                 });
-            
-            summaryQuestionInputEl.value = '';
-        });
-        
-        summaryQuestionInputEl.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for newlines if textarea
-                e.preventDefault(); // Prevent form submission if it's part of a form
-                askQuestionBtnEl.click();
-            }
+            });
+
+            // Clear AI Responses Button
+            const clearAIResponsesBtn = document.getElementById('clear-ai-responses-btn');
+
+            clearAIResponsesBtn.addEventListener('click', function() {
+                // Get all AI response containers
+                const aiContainers = [
+                    summaryContainerEl,
+                    doubtResponseContainerEl
+                ];
+
+                // Add fade-out animation
+                aiContainers.forEach(container => {
+                    if (container.style.display !== 'none') {
+                        container.classList.add('ai-response-fade');
+                    }
+                });
+
+                // After animation completes, hide elements and reset content
+                setTimeout(() => {
+                    // Reset Summary
+                    summaryContainerEl.style.display = 'none';
+                    summaryContentEl.innerHTML = '';
+                    summaryQAEl.style.display = 'none';
+                    answerContainerEl.innerHTML = '';
+
+                    // Reset Doubts section
+                    doubtResponseContainerEl.style.display = 'none';
+                    doubtResponseContentEl.innerHTML = '';
+                    doubtAudioPlayerEl.classList.add('hidden');
+                    doubtAudioEl.src = '';
+
+                    // Remove animation class
+                    aiContainers.forEach(container => {
+                        container.classList.remove('ai-response-fade');
+                    });
+                }, 500); // Match the animation duration
+            });
+
+            // Lo-fi Music Selection Logic
+            const backgroundMusicEl = document.getElementById('background-music');
+            const lofiTrackSelectEl = document.getElementById('lofi-track-select');
+
+            lofiTrackSelectEl.addEventListener('change', function() {
+                const selectedTrackUrl = this.value;
+                const wasPlaying = !backgroundMusicEl.paused; // Check if music was playing
+
+                // Update the source
+                backgroundMusicEl.src = selectedTrackUrl;
+
+                // Load the new source
+                backgroundMusicEl.load();
+
+                // If it was playing, try to play the new track automatically
+                if (wasPlaying) {
+                    backgroundMusicEl.play().catch(error => {
+                        console.warn("Audio playback prevented:", error);
+                        // Handle cases where autoplay is blocked (e.g., show a message)
+                    });
+                }
+            });
+
+            // Collapsible "Clear Your Doubts" Logic
+            doubtHeaderEl.addEventListener('click', function() {
+                const isExpanded = doubtContentWrapperEl.classList.contains('expanded');
+
+                if (isExpanded) {
+                    doubtContentWrapperEl.classList.remove('expanded');
+                    doubtArrowEl.classList.remove('rotate-180');
+                } else {
+                    // To calculate the correct max-height for smooth transition,
+                    // we temporarily set height to auto, get scrollHeight, then set max-height.
+                    doubtContentWrapperEl.style.maxHeight = doubtContentWrapperEl.scrollHeight + 'px';
+                    doubtContentWrapperEl.classList.add('expanded');
+                    doubtArrowEl.classList.add('rotate-180');
+
+                    // Reset max-height to a large value after the transition starts
+                    // This prevents issues if content changes while expanded
+                    doubtContentWrapperEl.addEventListener('transitionend', function handler() {
+                        if (doubtContentWrapperEl.classList.contains('expanded')) {
+                             doubtContentWrapperEl.style.maxHeight = '1000px'; // Or a very large value like '9999px'
+                        }
+                        doubtContentWrapperEl.removeEventListener('transitionend', handler);
+                    });
+                }
+            });
+
+            // Initial state: collapsed by default
+             doubtContentWrapperEl.classList.remove('expanded'); // Ensure it starts collapsed
+             doubtContentWrapperEl.style.maxHeight = '0';
+             doubtArrowEl.classList.remove('rotate-180');
+
         });
     </script>
 </div>
