@@ -157,14 +157,17 @@
                 <div id="chat-messages" class="h-96 overflow-y-auto border border-gray-200 dark:border-slate-700 p-4 mb-4 rounded-lg bg-gray-50 dark:bg-slate-800/60 space-y-4">
                     {# Messages are appended here by JS. This is for initial load if any, though typically live chat starts empty or loads history via JS #}
                     {% for message_item in messages %} {# Renamed to avoid conflict with Django messages framework #}
-                        <div class="message flex {% if message_item.user == request.user %}justify-end{% endif %}">
-                            <div class="max-w-[80%] sm:max-w-[70%] p-3 rounded-xl {% if message_item.user == request.user %}bg-indigo-500 text-white shadow{% else %}bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-100 shadow{% endif %}">
-                                {% if message_item.user != request.user %}
-                                <span class="message-user block text-xs font-semibold mb-1 {% if message_item.user == request.user %}text-indigo-600 dark:text-indigo-400{% else %}text-indigo-100{% endif %}">{{ message_item.user.username }}</span>
-                                {% endif %}
-                                <span class="message-content text-sm break-words">{{ message_item.content }}</span>
-                            </div>
+                    <div class="message flex {% if message_item.user == request.user %}justify-end{% endif %}">
+                        <div class="max-w-[80%] sm:max-w-[70%] p-3 rounded-xl {% if message_item.user == request.user %}bg-indigo-500 text-white shadow{% else %}bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-100 shadow{% endif %}">
+                            {% if message_item.user != request.user %}
+                                {# Make the username a link to their profile #}
+                                <a href="{% url 'view_profile' message_item.user.username %}" class="message-user block text-xs font-semibold mb-1 text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    {{ message_item.user.username }}
+                                </a>
+                            {% endif %}
+                            <span class="message-content text-sm break-words">{{ message_item.content }}</span>
                         </div>
+                    </div>
                     {% endfor %}
                 </div>
                 <form id="chat-form" class="flex space-x-3 items-center">
@@ -334,28 +337,33 @@
         const chatMessagesContainer = document.getElementById('chat-messages');
 
         function appendMessageToChat(msgUsername, messageContent, isCurrentUser, motivationalMsg) {
-            const messageWrapper = document.createElement('div');
-            messageWrapper.classList.add('message', 'flex', 'items-end', isCurrentUser ? 'justify-end' : 'justify-start');
+    const messageWrapper = document.createElement('div');
+    messageWrapper.classList.add('message', 'flex', 'items-end', isCurrentUser ? 'justify-end' : 'justify-start');
 
-            const messageBubble = document.createElement('div');
-            messageBubble.classList.add('max-w-[80%]', 'sm:max-w-[70%]', 'p-3', 'rounded-xl', 'shadow');
-            if (isCurrentUser) {
-                messageBubble.classList.add('bg-indigo-500', 'text-white');
-            } else {
-                messageBubble.classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-800', 'dark:text-gray-100');
-                const userSpan = document.createElement('span');
-                userSpan.classList.add('message-user', 'block', 'text-xs', 'font-semibold', 'mb-0.5', 'text-indigo-600', 'dark:text-indigo-400');
-                userSpan.textContent = msgUsername;
-                messageBubble.appendChild(userSpan);
-            }
+    const messageBubble = document.createElement('div');
+    messageBubble.classList.add('max-w-[80%]', 'sm:max-w-[70%]', 'p-3', 'rounded-xl', 'shadow');
+    
+    if (isCurrentUser) {
+        messageBubble.classList.add('bg-indigo-500', 'text-white');
+    } else {
+        messageBubble.classList.add('bg-gray-200', 'dark:bg-slate-700', 'text-gray-800', 'dark:text-gray-100');
+        
+        // Create a link for the username instead of just a span
+        const userLink = document.createElement('a');
+        // Manually construct the URL to the user's profile
+        userLink.href = `/accounts/profile/${msgUsername}/`; 
+        userLink.classList.add('message-user', 'block', 'text-xs', 'font-semibold', 'mb-0.5', 'text-indigo-600', 'dark:text-indigo-400', 'hover:underline');
+        userLink.textContent = msgUsername;
+        messageBubble.appendChild(userLink);
+    }
 
-            const contentSpan = document.createElement('span');
-            contentSpan.classList.add('message-content', 'text-sm', 'break-words', 'leading-relaxed');
-            contentSpan.textContent = messageContent;
-            messageBubble.appendChild(contentSpan);
+    const contentSpan = document.createElement('span');
+    contentSpan.classList.add('message-content', 'text-sm', 'break-words', 'leading-relaxed');
+    contentSpan.textContent = messageContent;
+    messageBubble.appendChild(contentSpan);
 
-            messageWrapper.appendChild(messageBubble);
-            chatMessagesContainer.appendChild(messageWrapper);
+    messageWrapper.appendChild(messageBubble);
+    chatMessagesContainer.appendChild(messageWrapper);
 
             if (motivationalMsg) {
                 const motivationalElement = document.createElement('div');

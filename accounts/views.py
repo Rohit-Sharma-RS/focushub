@@ -1,6 +1,7 @@
 # accounts/views.py
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
@@ -10,6 +11,13 @@ from .forms import SignupForm, CustomLoginForm
 from django.db.models import Count, Sum, Avg
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
+from rooms.models import StudySession
+from dotenv import load_dotenv
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 def signup(request):
     if request.user.is_authenticated:
@@ -240,9 +248,73 @@ def profile(request):
         'time_of_day_labels': time_of_day_labels,
         'time_of_day_values': time_of_day_values_minutes,
         'study_calendar_data': study_calendar_data,
+        'follower_count': user.profile.follower_count,
+        'following_count': user.profile.following_count,
     }
 
     return render(request, 'accounts/profile.html', context)
+
+@login_required
+def view_profile(request, username):
+    """
+    New view to display the profile of any user.
+    """
+    profile_user = get_object_or_404(User, username=username)
+
+    # Redirect to the main profile page if a user tries to view their own profile via this URL.
+    if request.user == profile_user:
+        return redirect('profile')
+
+    # Get study statistics for the user whose profile is being viewed.
+    total_seconds = profile_user.profile.total_study_time or 0
+    hours_studied = total_seconds // 3600
+    minutes_studied = (total_seconds % 3600) // 60
+    
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    recent_sessions = StudySession.objects.filter(user=profile_user, start_time__gte=thirty_days_ago).order_by('-start_time')[:10]
+
+    # Check if the currently logged-in user is following the user they are viewing.
+    is_following = request.user.following.filter(user=profile_user).exists()
+
+    context = {
+        'profile_user': profile_user,
+        'is_following': is_following,
+        'follower_count': profile_user.profile.follower_count,
+        'following_count': profile_user.profile.following_count,
+        'hours_studied': hours_studied,
+        'minutes_studied': minutes_studied,
+        'recent_sessions': recent_sessions,
+    }
+    
+    return render(request, 'accounts/view_profile.html', context)
+
+@login_required
+def toggle_follow(request, username):
+    """
+    New view to handle the logic of following and unfollowing a user.
+    """
+    if request.method == 'POST':
+        user_to_toggle = get_object_or_404(User, username=username)
+
+        # Prevent users from following themselves.
+        if user_to_toggle == request.user:
+            messages.error(request, "You cannot follow yourself.")
+            return redirect('view_profile', username=username)
+
+        # Check if the current user is already following, then toggle.
+        if user_to_toggle.profile.followers.filter(id=request.user.id).exists():
+            # Unfollow the user
+            user_to_toggle.profile.followers.remove(request.user)
+            messages.info(request, f"You have unfollowed {username}.")
+        else:
+            # Follow the user
+            user_to_toggle.profile.followers.add(request.user)
+            messages.success(request, f"You are now following {username}.")
+        
+        return redirect('view_profile', username=username)
+    else:
+        # Redirect if the request is not POST.
+        return redirect('view_profile', username=username)
 
 
 @login_required

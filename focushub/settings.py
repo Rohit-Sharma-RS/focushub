@@ -2,12 +2,11 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key-change-in-production')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
+load_dotenv(BASE_DIR / '.env')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']  # Adjust for production
 
 INSTALLED_APPS = [
@@ -29,6 +28,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

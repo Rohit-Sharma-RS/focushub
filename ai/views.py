@@ -8,11 +8,14 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-import dotenv
+from dotenv import load_dotenv
+from pathlib import Path
 from .summarize import summarize_text
 from .groq_integration import answer_question as ask_groq_general_question 
 
-dotenv.load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 OCR_API_KEY = os.getenv('OCR_API_KEY') # Replace with your actual key or load from env/settings
 

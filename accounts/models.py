@@ -11,7 +11,20 @@ class Profile(models.Model):
     streak = models.IntegerField(default=0)
     last_login_date = models.DateField(null=True, blank=True)
     total_study_time = models.IntegerField(default=0)  # in minutes
-    
+    followers = models.ManyToManyField(User, related_name='following', symmetrical=False, blank=True)
+
     def __str__(self):
         return f"{self.user.username}'s profile"
+    
+    @property
+    def follower_count(self):
+        return self.followers.count()
 
+    @property
+    def following_count(self):
+        return self.user.following.count()
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    Profile.objects.get_or_create(user=instance)
+    instance.profile.save()

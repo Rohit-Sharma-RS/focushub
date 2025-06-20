@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-6">
+  <div class="mb-8 bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
+    <div class="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+    
+    <div class="relative px-6 pt-8 pb-6 flex flex-col md:flex-row md:items-end">
+      <div class="absolute top-0 transform -translate-y-1/2">
+        <div class="h-24 w-24 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg border-4 border-white dark:border-slate-800">
+          {{ profile_user.username|first|upper }}
+        </div>
+      </div>
+      
+      <div class="mt-12 md:mt-0 md:ml-28">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ profile_user.username }}</h1>
+        <p class="text-gray-600 dark:text-gray-400">Member since {{ profile_user.date_joined|date:"F j, Y" }}</p>
+      </div>
+      
+      <div class="mt-4 md:mt-0 md:ml-auto flex items-center space-x-6">
+        <div class="flex space-x-4 text-center">
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ follower_count }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Followers</p>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ following_count }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Following</p>
+            </div>
+        </div>
+
+        <form action="{% url 'toggle_follow' profile_user.username %}" method="post">
+            {% csrf_token %}
+            {% if is_following %}
+                <button type="submit" class="px-4 py-2 text-sm font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-500 transition-colors">
+                    <i class="fa-solid fa-user-minus mr-1.5"></i> Unfollow
+                </button>
+            {% else %}
+                <button type="submit" class="px-4 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                    <i class="fa-solid fa-user-plus mr-1.5"></i> Follow
+                </button>
+            {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
+    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Study Statistics</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ hours_studied }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Hours Studied</div>
+      </div>
+      <div class="text-center p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ minutes_studied }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutes Studied</div>
+      </div>
+      <div class="text-center p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ recent_sessions|length }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Recent Sessions</div>
+      </div>
+      <div class="text-center p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ profile_user.profile.streak }}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Day Streak</div>
+      </div>
+    </div>
+  </div>
+  
+  </div>
+{% endblock %}
