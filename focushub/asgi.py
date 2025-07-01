@@ -31,7 +31,7 @@ application = ProtocolTypeRouter({
     
 #     User = get_user_model()
 #     if not User.objects.filter(username="admin").exists():
-#         User.objects.create_superuser("admin", "admin@example.com", "admin123")
+#         User.objects.create_superuser("admin", "admin@example.com", "admin12369")
 #         print("✅ Superuser created")
 # except Exception as e:
 #     print(f"⚠️ Migration or superuser creation failed: {e}")
