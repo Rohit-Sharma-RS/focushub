@@ -21,3 +21,17 @@ application = ProtocolTypeRouter({
         )
     ),
 })
+
+from django.contrib.auth import get_user_model
+from django.core.management import call_command
+
+try:
+    call_command("migrate", interactive=False)
+    print("✅ Ran migrate from asgi.py")
+    
+    User = get_user_model()
+    if not User.objects.filter(username="admin").exists():
+        User.objects.create_superuser("admin", "admin@example.com", "admin123")
+        print("✅ Superuser created")
+except Exception as e:
+    print(f"⚠️ Migration or superuser creation failed: {e}")
