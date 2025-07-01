@@ -17,7 +17,8 @@ def room_list(request):
     rooms = Room.objects.all()
     user_rooms = request.user.rooms_joined.all()
 
-    # Handle room deletion (admin only)
+    # Handle room deletion (admin 
+    # only)
     if request.method == 'POST' and request.user.is_staff:
         room_id = request.POST.get('room_id')
         if room_id:
