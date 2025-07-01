@@ -30,6 +30,13 @@ class StudySession(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     duration = models.IntegerField(default=0)  # in minutes
-    
+
+    @property
+    def duration_minutes(self):
+        try:
+            return int(self.duration) // 60
+        except:
+            return 0
+        
     def __str__(self):
         return f"{self.user.username} in {self.room.name}"
