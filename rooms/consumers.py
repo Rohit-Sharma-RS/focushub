@@ -5,7 +5,8 @@ from .models import Room, Message
 from django.contrib.auth.models import User
 from ai.sentiment import analyze_sentiment
 from ai.motivational import get_motivational_response
-
+from utils.profanity_filter import contains_profanity
+import html
 class RoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
@@ -30,13 +31,26 @@ class RoomConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         message = data['message']
         username = data['username']
+        message = html.escape(message)
+        # 🔥 Profanity Filter
+        if contains_profanity(message):
+            is_inappropriate = contains_profanity(message)
         
+        if is_inappropriate:
+            # OPTION 1: Send flash message and don't broadcast
+            await self.send(text_data=json.dumps({
+                'type': 'flash_message',
+                'message': 'Your message contains inappropriate language and was not sent.',
+                'message_type': 'warning'
+            }))
+            return 
+
         # Analyze sentiment
         mood_score = analyze_sentiment(message)
         
         # Get motivational response if score is below threshold
         motivational_message = None
-        if mood_score < 0.3:  # Negative sentiment threshold
+        if mood_score < 0.3:
             motivational_message = get_motivational_response(mood_score)
         
         # Save message
@@ -53,6 +67,7 @@ class RoomConsumer(AsyncWebsocketConsumer):
                 'motivational_message': motivational_message
             }
         )
+
 
     async def chat_message(self, event):
         message = event['message']

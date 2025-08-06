@@ -492,11 +492,93 @@
             });
         }
 
+                // Add this function to handle flash messages
+        function showFlashMessage(message, messageType = 'info') {
+            const flashContainer = document.createElement('div');
+            const iconMap = {
+                'warning': 'fa-triangle-exclamation',
+                'error': 'fa-circle-exclamation',
+                'info': 'fa-info-circle',
+                'success': 'fa-check-circle'
+            };
+            
+            const colorMap = {
+                'warning': 'bg-yellow-100 dark:bg-yellow-800/70 border-yellow-500 text-yellow-700 dark:text-yellow-200',
+                'error': 'bg-red-100 dark:bg-red-800/70 border-red-500 text-red-700 dark:text-red-200',
+                'info': 'bg-blue-100 dark:bg-blue-800/70 border-blue-500 text-blue-700 dark:text-blue-200',
+                'success': 'bg-green-100 dark:bg-green-800/70 border-green-500 text-green-700 dark:text-green-200'
+            };
+            
+            flashContainer.className = `my-3 mx-auto max-w-[90%] p-3 rounded-lg border-l-4 text-sm shadow flash-message ${colorMap[messageType] || colorMap['info']}`;
+            flashContainer.innerHTML = `<i class="fa-solid ${iconMap[messageType] || iconMap['info']} mr-2 opacity-80"></i> ${message}`;
+            
+            chatMessagesContainer.appendChild(flashContainer);
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            
+            // Auto-remove flash message after 5 seconds
+            setTimeout(() => {
+                if (flashContainer.parentNode) {
+                    flashContainer.style.transition = 'opacity 0.5s ease-out';
+                    flashContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        if (flashContainer.parentNode) {
+                            flashContainer.remove();
+                        }
+                    }, 500);
+                }
+            }, 5000);
+        }
+
+        // Enhanced WebSocket message handler
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            // Handle different message types
+            if (data.type === 'flash_message') {
+                showFlashMessage(data.message, data.message_type);
+            } else if (data.type === 'chat_message' || !data.type) {
+                // Regular chat message (maintain backward compatibility)
+                const isCurrentUser = (data.username === currentUsername);
+                appendMessageToChat(data.username, data.message, isCurrentUser, data.motivational_message);
+            } else if (data.error) {
+                // Handle error messages (fallback for old format)
+                showFlashMessage(data.error, 'error');
+            }
+        };
+
+        // You can also add CSS for smooth flash message animations
+        const flashMessageStyles = `
+            <style>
+                .flash-message {
+                    animation: slideInDown 0.3s ease-out;
+                }
+                
+                @keyframes slideInDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+        `;
+
+        // Inject the styles into the document head
+        if (!document.querySelector('#flash-message-styles')) {
+            const styleElement = document.createElement('div');
+            styleElement.id = 'flash-message-styles';
+            styleElement.innerHTML = flashMessageStyles;
+            document.head.appendChild(styleElement);
+        }
+
 
         function switchMode(newMode) {
             // Send any accumulated time before switching modes if in pomodoro
             if (timerRunning && currentMode === 'pomodoro') {
-                 sendFocusTimeToServer();
+                sendFocusTimeToServer();
             }
 
             currentMode = newMode;
@@ -645,16 +727,24 @@
         // Initial Pomodoro Setup
         switchMode(currentMode); // Initialize timer display and mode
 
-        // Ensure time is sent if user navigates away while timer is running
-        window.addEventListener('beforeunload', function() {
+        // Enhanced beforeunload event with alert for running timer
+        window.addEventListener('beforeunload', function(event) {
             if (timerRunning && currentMode === 'pomodoro' && totalFocusSecondsAccumulated > 0) {
-                 // Use synchronous fetch or sendBeacon for best chance of sending data
-                 // Note: sendBeacon is preferred for unload events
-                 navigator.sendBeacon('{% url "update_timer" %}', JSON.stringify({
-                    'duration_seconds': totalFocusSecondsAccumulated,
-                    'room_id': roomId
-                 }));
-                 console.log("Sending final accumulated time via sendBeacon.");
+                // Show alert to user about timer reset and time saving
+                const message = `⏰ Timer is running! Your focus time (${Math.floor(totalFocusSecondsAccumulated / 60)} min ${totalFocusSecondsAccumulated % 60} sec) will be saved, but the timer will reset when you refresh.`;
+                
+                // Set the message for the browser's native dialog
+                event.returnValue = message;
+                
+                // Use synchronous fetch or sendBeacon for best chance of sending data
+                // Note: sendBeacon is preferred for unload events
+                navigator.sendBeacon('{% url "update_timer" %}', JSON.stringify({
+                   'duration_seconds': totalFocusSecondsAccumulated,
+                   'room_id': roomId
+                }));
+                console.log("Sending final accumulated time via sendBeacon.");
+                
+                return message; // For older browsers
             }
         });
 
