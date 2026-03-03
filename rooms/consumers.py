@@ -7,7 +7,10 @@ from ai.sentiment import analyze_sentiment
 from ai.motivational import get_motivational_response
 from utils.profanity_filter import contains_profanity
 import html
+import bleach
+
 class RoomConsumer(AsyncWebsocketConsumer):
+    is_inappropriate = False
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'room_{self.room_id}'
@@ -28,16 +31,16 @@ class RoomConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
+        is_inappropriate = False
         data = json.loads(text_data)
         message = data['message']
         username = data['username']
         message = html.escape(message)
-        # 🔥 Profanity Filter
+        message = bleach.clean(message, tags=[], attributes={})
         if contains_profanity(message):
             is_inappropriate = contains_profanity(message)
         
         if is_inappropriate:
-            # OPTION 1: Send flash message and don't broadcast
             await self.send(text_data=json.dumps({
                 'type': 'flash_message',
                 'message': 'Your message contains inappropriate language and was not sent.',
@@ -67,7 +70,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
                 'motivational_message': motivational_message
             }
         )
-
 
     async def chat_message(self, event):
         message = event['message']

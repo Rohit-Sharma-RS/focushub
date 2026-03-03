@@ -4,7 +4,7 @@ import unicodedata
 BAD_WORDS = {
     "fuck", "shit", "bitch", "asshole", "bastard", "dick", "cunt", "slut", "nigga",
     "chutiya", "chuteya", "bhenchod", "madarchod", "loda", "lund", "gaand", "gandu",
-    "randi", "kamina", "harami", "gaandmasti", "bkl", "mc", "bc"
+    "randi", "kamina", "harami", "gaandmasti", "bkl", "mc", "bc", "pgl", "pagal", "stupid", "mad", "crazy"
 }
 
 OBFUSCATION_PATTERNS = [
